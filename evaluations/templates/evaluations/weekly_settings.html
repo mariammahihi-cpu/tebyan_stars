@@ -1,0 +1,48 @@
+<!-- evaluations/templates/evaluations/weekly_settings.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>الإعدادات الأسبوعية - نجوم التبيان</title>
+</head>
+<body>
+    <main class="settings-page">
+        <h1>الإعدادات الأسبوعية</h1>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit">حفظ الإعدادات</button>
+        </form>
+
+        <hr>
+
+        <h2>التصفير الأسبوعي</h2>
+        <p>يرجّع رصيد الأسبوع لكل الطلاب لصفره الافتراضي (الرصيد التراكمي ما يتأثر، يضل محتفظ بكل شي).</p>
+        <form method="post" action="{% url 'evaluations:weekly_reset' %}">
+            {% csrf_token %}
+            <button type="submit" onclick="return confirm('متأكدة إنك تبين تصفّري الرصيد الأسبوعي لكل الطلاب؟');">تصفير الرصيد الأسبوعي الآن</button>
+        </form>
+
+        <p><a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a></p>
+    </main>
+</body>
+</html>

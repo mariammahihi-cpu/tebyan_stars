@@ -1,0 +1,285 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة التحكم{% endblock %} - نجوم التبيان</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#1B5E20',
+                            medium: '#66BB6A',
+                            light: '#A5D6A7',
+                            bg: '#E8F5E9',
+                        },
+                        gold: {
+                            dark: '#F9A825',
+                            light: '#FFD54F',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        * { font-family: 'Tajawal', sans-serif; }
+
+        .app-input {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #A5D6A7;
+            border-radius: 0.5rem;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            color: #1e293b;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .app-input::placeholder { color: #94a3b8; }
+        .app-input:focus { border-color: #1B5E20; box-shadow: 0 0 0 3px rgba(27, 94, 32, .15); }
+        textarea.app-input { resize: none; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-brand-bg text-slate-800 min-h-screen">
+
+{% with ns=request.resolver_match.namespace url_name=request.resolver_match.url_name %}
+<div class="flex min-h-screen">
+
+    <!-- ============ الشريط الجانبي ============ -->
+    <aside class="hidden md:flex flex-col w-64 bg-white border-l border-brand-light shrink-0 sticky top-0 h-screen overflow-y-auto">
+        <div class="h-16 flex items-center gap-3 px-6 border-b border-brand-light">
+            <div class="bg-brand-dark p-2 rounded-lg">
+                <i class="fa-solid fa-star text-gold-light"></i>
+            </div>
+            <span class="text-lg font-bold text-brand-dark">نجوم التبيان</span>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1 text-sm">
+
+            {% if user.is_super_admin %}
+                <a href="{% url 'accounts:super_admin_dashboard' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'super_admin_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-house w-5"></i> الرئيسية
+                </a>
+            {% elif user.is_school_admin %}
+                <a href="{% url 'accounts:school_admin_dashboard' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'school_admin_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-house w-5"></i> الرئيسية
+                </a>
+            {% elif user.is_data_entry %}
+                <a href="{% url 'accounts:data_entry_dashboard' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'data_entry_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-house w-5"></i> الرئيسية
+                </a>
+            {% endif %}
+
+            {% if user.is_super_admin %}
+                <a href="{% url 'accounts:account_list' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'account_list' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-users-gear w-5"></i> إدارة الحسابات
+                </a>
+            {% endif %}
+            {% if user.is_school_admin %}
+                <a href="{% url 'accounts:data_entry_account_list' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'data_entry_account_list' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-user-check w-5"></i> حسابات موظفات الإدخال
+                </a>
+            {% endif %}
+
+            {% if user.is_super_admin or user.is_school_admin %}
+                <div class="pt-3 mt-3 border-t border-brand-light text-xs font-bold text-slate-400 px-4">الهيكل التنظيمي</div>
+
+                <a href="{% url 'structure:grade_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'grade_list' or url_name == 'section_list' or url_name == 'classroom_roster' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                  <i class="fa-solid fa-layer-group w-5"></i> الصفوف والطلاب
+                </a>
+                <a href="{% url 'structure:manage_subjects' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_subjects' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-book w-5"></i> المواد
+                </a>
+                <a href="{% url 'structure:manage_teachers' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_teachers' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-chalkboard-user w-5"></i> المعلّمات
+                </a>
+                <a href="{% url 'structure:manage_section_subjects' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_section_subjects' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-diagram-project w-5"></i> تدريس المواد للفصول
+                </a>
+
+                <div class="pt-3 mt-3 border-t border-brand-light text-xs font-bold text-slate-400 px-4">التقييم</div>
+
+            
+                <a href="{% url 'rules:manage_rules' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_rules' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-list-check w-5"></i> قواعد التقييم
+                </a>
+                <a href="{% url 'evaluations:activity_log' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'activity_log' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i> سجل النشاط
+                </a>
+                <a href="{% url 'evaluations:weekly_settings' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'weekly_settings' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-sliders w-5"></i> الإعدادات الأسبوعية
+                </a>
+            {% endif %}
+
+            {% if user.is_data_entry %}
+                <a href="{% url 'evaluations:apply_evaluation' %}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'apply_evaluation' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                    <i class="fa-solid fa-star w-5"></i> تطبيق تقييم
+                </a>
+            {% endif %}
+        </nav>
+
+        <div class="p-4 border-t border-brand-light">
+            <form method="post" action="{% url 'accounts:logout' %}"
+                  data-confirm-title="تسجيل الخروج"
+                  data-confirm="هل أنتِ متأكدة من تسجيل الخروج من النظام؟"
+                  data-confirm-tone="warning">
+                {% csrf_token %}
+                <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition text-sm font-medium">
+                    <i class="fa-solid fa-right-from-bracket w-5"></i> تسجيل الخروج
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ============ منطقة المحتوى ============ -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <header class="h-16 bg-white border-b border-brand-light flex items-center justify-between px-6 sticky top-0 z-30">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                {% block page_title %}{% endblock %}
+            </h1>
+            <div class="flex items-center gap-4">
+                {% block header_actions %}{% endblock %}
+
+                <div class="flex items-center gap-3 pr-4 border-r border-brand-light">
+                    <div class="text-right leading-tight hidden sm:block">
+                        <div class="text-sm font-semibold text-slate-800">{{ user.full_name }}</div>
+                        <div class="text-xs text-slate-500">{{ user.get_role_display }}</div>
+                    </div>
+                    <div class="w-9 h-9 rounded-full bg-brand-dark/10 border border-brand-medium/40 text-brand-dark flex items-center justify-center font-bold">
+                        {{ user.full_name|first|upper }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6">
+
+            {% if messages %}{% for m in messages %}
+                <div class="mb-4 px-4 py-3 rounded-lg border text-sm
+                    {% if m.tags == 'success' %}bg-green-50 border-green-300 text-green-800
+                    {% elif m.tags == 'warning' %}bg-yellow-50 border-yellow-300 text-yellow-800
+                    {% elif m.tags == 'info' %}bg-blue-50 border-blue-300 text-blue-800
+                    {% else %}bg-red-50 border-red-300 text-red-800{% endif %}">{{ m }}</div>
+            {% endfor %}{% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endwith %}
+
+<!-- ============ نافذة التأكيد الموحّدة (تشتغل تلقائيًا على أي فورم فيه data-confirm) ============ -->
+<div id="confirmModalOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+        <div id="confirmModalIcon" class="mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center">
+            <i id="confirmModalIconGlyph" class="fa-solid text-2xl"></i>
+        </div>
+        <h3 id="confirmModalTitle" class="text-lg font-bold text-slate-800 mb-2"></h3>
+        <p id="confirmModalMessage" class="text-slate-500 text-sm mb-6"></p>
+        <div class="flex gap-3">
+            <button id="confirmModalConfirmBtn" type="button" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-white transition"></button>
+            <button id="confirmModalCancelBtn" type="button" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const overlay = document.getElementById('confirmModalOverlay');
+        const iconWrap = document.getElementById('confirmModalIcon');
+        const iconGlyph = document.getElementById('confirmModalIconGlyph');
+        const titleEl = document.getElementById('confirmModalTitle');
+        const messageEl = document.getElementById('confirmModalMessage');
+        const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+        const cancelBtn = document.getElementById('confirmModalCancelBtn');
+
+        const tones = {
+            danger:  { icon: 'fa-triangle-exclamation', iconWrap: 'bg-red-100 text-red-600',     btn: 'bg-red-600 hover:bg-red-700' },
+            warning: { icon: 'fa-circle-exclamation',   iconWrap: 'bg-amber-100 text-amber-600', btn: 'bg-amber-600 hover:bg-amber-700' },
+            default: { icon: 'fa-circle-question',      iconWrap: 'bg-brand-dark/10 text-brand-dark', btn: 'bg-brand-dark hover:bg-[#154d19]' },
+        };
+
+        /* المحرّك الأساسي — بيرجّع Promise. أي كود JS بأي صفحة يقدر يستدعيه:
+           const ok = await showConfirmModal({ title: '...', message: '...', tone: 'danger' }); */
+        window.showConfirmModal = function ({ title, message, tone, confirmText } = {}) {
+            return new Promise((resolve) => {
+                const t = tones[tone] || tones.default;
+                iconWrap.className = 'mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center ' + t.iconWrap;
+                iconGlyph.className = 'fa-solid text-2xl ' + t.icon;
+                titleEl.textContent = title || 'تأكيد العملية';
+                messageEl.textContent = message || '';
+                confirmBtn.textContent = confirmText || 'تأكيد';
+                confirmBtn.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-white transition ' + t.btn;
+
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+
+                function finish(result) {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
+                    confirmBtn.removeEventListener('click', onYes);
+                    cancelBtn.removeEventListener('click', onNo);
+                    overlay.removeEventListener('click', onOverlayClick);
+                    document.removeEventListener('keydown', onEsc);
+                    resolve(result);
+                }
+                function onYes() { finish(true); }
+                function onNo() { finish(false); }
+                function onOverlayClick(e) { if (e.target === overlay) finish(false); }
+                function onEsc(e) { if (e.key === 'Escape') finish(false); }
+
+                confirmBtn.addEventListener('click', onYes);
+                cancelBtn.addEventListener('click', onNo);
+                overlay.addEventListener('click', onOverlayClick);
+                document.addEventListener('keydown', onEsc);
+            });
+        };
+
+        /* الفورمات اللي فيها data-confirm بتستخدم نفس المحرّك تلقائيًا (زي ما كان تمامًا) */
+        document.addEventListener('submit', async function (e) {
+            const form = e.target;
+            if (!form.hasAttribute('data-confirm')) return;
+            e.preventDefault();
+
+            const ok = await window.showConfirmModal({
+                title: form.dataset.confirmTitle,
+                message: form.dataset.confirm,
+                tone: form.dataset.confirmTone,
+                confirmText: form.dataset.confirmButton,
+            });
+
+            if (ok) form.submit();
+        });
+    })();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

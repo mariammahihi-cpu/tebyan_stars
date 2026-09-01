@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء حساب جديد - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <i class="fa-solid fa-user-plus text-brand-dark"></i> إنشاء حساب جديد
+{% endblock %}
+
+{% block content %}
+    <div class="bg-white rounded-xl border border-brand-light p-6 max-w-md">
+        {% if form.non_field_errors %}
+            <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="flex gap-2 pt-2">
+                <button type="submit" class="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-[#154d19] transition">إنشاء الحساب</button>
+                <a href="{% url 'accounts:account_list' %}" class="px-4 py-2 border border-brand-light text-slate-600 text-sm font-medium rounded-lg hover:bg-brand-bg transition">إلغاء</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,80 @@
+<!-- rules/templates/rules/manage_rules.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>قواعد التقييم - نجوم التبيان</title>
+</head>
+<body>
+    <main class="manage-page">
+        <h1>قواعد التقييم</h1>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>اسم القاعدة</th>
+                    <th>التصنيف</th>
+                    <th>المادة</th>
+                    <th>القيمة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rule in rules %}
+                    <tr>
+                        <td>{{ rule.name }}</td>
+                        <td>{{ rule.get_category_display }}</td>
+                        <td>{% if rule.subject %}{{ rule.subject.name }}{% else %}كل المواد{% endif %}</td>
+                        <td>{% if rule.value > 0 %}+{% endif %}{{ rule.value }}</td>
+                        <td>
+                            <a href="{% url 'rules:edit_rule' rule.pk %}">تعديل</a>
+                            {% if user.is_super_admin %}
+                                <form method="post" action="{% url 'rules:delete_rule' rule.pk %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" onclick="return confirm('متأكدة من حذف هذه القاعدة؟');">حذف</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">لا يوجد قواعد بعد</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if user.is_super_admin %}
+            <h2>إضافة قاعدة جديدة</h2>
+            {% if form.non_field_errors %}
+                <div class="form-errors">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" class="inline-form">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-field">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button type="submit">إضافة</button>
+            </form>
+        {% endif %}
+
+        <p>
+            {% if user.is_super_admin %}
+                <a href="{% url 'accounts:super_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% else %}
+                <a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% endif %}
+        </p>
+    </main>
+</body>
+</html>

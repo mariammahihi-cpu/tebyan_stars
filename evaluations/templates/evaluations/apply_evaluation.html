@@ -1,0 +1,207 @@
+<!-- evaluations/templates/evaluations/apply_evaluation.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تطبيق تقييم - نجوم التبيان</title>
+</head>
+<body>
+    <main class="apply-page">
+        <h1>تطبيق تقييم على طالب</h1>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        {{ subjects_data|json_script:"subjects-data" }}
+        {{ rules_data|json_script:"rules-data" }}
+        {{ students_data|json_script:"students-data" }}
+
+        <form method="post" id="evaluation-form">
+            {% csrf_token %}
+
+            <div class="form-field">
+                <label for="category-filter">نوع التقييم</label>
+                <select id="category-filter">
+                    <option value="subject">مادة دراسية</option>
+                    <option value="general">إشراف عام</option>
+                </select>
+            </div>
+
+            <div class="form-field" id="subject-field-wrapper">
+                {{ form.subject.label_tag }}
+                {{ form.subject }}
+                {% for error in form.subject.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="form-field">
+                {{ form.rule.label_tag }}
+                {{ form.rule }}
+                {% for error in form.rule.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <hr>
+
+            <div class="form-field">
+                <label for="grade-filter">فلترة حسب الصف (اختياري)</label>
+                <select id="grade-filter">
+                    <option value="">كل الصفوف</option>
+                    {% for grade in grades %}
+                        <option value="{{ grade.id }}">{{ grade }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="student-search">بحث بالاسم</label>
+                <input type="text" id="student-search" placeholder="اكتبي اسم الطالب...">
+            </div>
+
+            <div class="form-field">
+                {{ form.student.label_tag }}
+                {{ form.student }}
+                {% for error in form.student.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div class="balance-box" id="balance-box" hidden>
+                <p>الرصيد الأسبوعي (المادة المختارة): <strong id="balance-weekly-subject">—</strong></p>
+                <p>الرصيد الأسبوعي (الإشراف العام): <strong id="balance-weekly-supervision">—</strong></p>
+                <p>الرصيد التراكمي: <strong id="balance-cumulative">—</strong></p>
+            </div>
+
+            <button type="submit">تسجيل التقييم</button>
+        </form>
+
+        <p><a href="{% url 'accounts:data_entry_dashboard' %}">رجوع للوحة الرئيسية</a></p>
+    </main>
+
+    <script>
+        const subjectsData = JSON.parse(document.getElementById('subjects-data').textContent);
+        const rulesData = JSON.parse(document.getElementById('rules-data').textContent);
+        const studentsData = JSON.parse(document.getElementById('students-data').textContent);
+
+        const categoryFilter = document.getElementById('category-filter');
+        const subjectFieldWrapper = document.getElementById('subject-field-wrapper');
+        const subjectSelect = document.getElementById('id_subject');
+        const ruleSelect = document.getElementById('id_rule');
+        const gradeFilter = document.getElementById('grade-filter');
+        const studentSearch = document.getElementById('student-search');
+        const studentSelect = document.getElementById('id_student');
+        const balanceBox = document.getElementById('balance-box');
+
+        const ruleOptionsOriginal = Array.from(ruleSelect.options)
+            .filter(function (opt) { return opt.value; })
+            .map(function (opt) { return { value: opt.value, text: opt.text }; });
+
+        const studentOptionsOriginal = Array.from(studentSelect.options)
+            .filter(function (opt) { return opt.value; })
+            .map(function (opt) { return { value: opt.value, text: opt.text }; });
+
+        function ruleMeta(id) {
+            return rulesData.find(function (r) { return String(r.id) === String(id); });
+        }
+        function studentMeta(id) {
+            return studentsData.find(function (s) { return String(s.id) === String(id); });
+        }
+
+        function refreshRuleOptions() {
+            const isSubjectMode = categoryFilter.value === 'subject';
+            subjectFieldWrapper.hidden = !isSubjectMode;
+            if (!isSubjectMode) {
+                subjectSelect.value = '';
+            }
+
+            const selectedSubjectId = isSubjectMode ? subjectSelect.value : '';
+
+            ruleSelect.innerHTML = '';
+            ruleSelect.add(new Option('---------', ''));
+
+            ruleOptionsOriginal.forEach(function (opt) {
+                const meta = ruleMeta(opt.value);
+                if (!meta) return;
+
+                if (isSubjectMode) {
+                    if (meta.category !== 'subject') return;
+                    if (selectedSubjectId && meta.subject_id && String(meta.subject_id) !== String(selectedSubjectId)) return;
+                } else {
+                    if (meta.category !== 'general') return;
+                }
+
+                ruleSelect.add(new Option(opt.text, opt.value));
+            });
+        }
+
+        function refreshStudentOptions() {
+            const gradeId = gradeFilter.value;
+            const searchText = studentSearch.value.trim().toLowerCase();
+
+            const matches = [];
+            const rest = [];
+
+            studentOptionsOriginal.forEach(function (opt) {
+                const meta = studentMeta(opt.value);
+                if (!meta) return;
+                if (gradeId && String(meta.grade_id) !== String(gradeId)) return;
+
+                if (searchText && opt.text.toLowerCase().includes(searchText)) {
+                    matches.push(opt);
+                } else {
+                    rest.push(opt);
+                }
+            });
+
+            studentSelect.innerHTML = '';
+            studentSelect.add(new Option('---------', ''));
+            matches.concat(rest).forEach(function (opt) {
+                studentSelect.add(new Option(opt.text, opt.value));
+            });
+        }
+
+        function refreshBalance() {
+            const studentId = studentSelect.value;
+
+            if (!studentId) {
+                balanceBox.hidden = true;
+                return;
+            }
+
+            let url = "/evaluations/student-balance/" + studentId + "/";
+            if (categoryFilter.value === 'subject' && subjectSelect.value) {
+                url += "?subject=" + subjectSelect.value;
+            }
+
+            fetch(url)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    document.getElementById('balance-weekly-subject').textContent =
+                        data.weekly_subject === null ? '—' : data.weekly_subject;
+                    document.getElementById('balance-weekly-supervision').textContent = data.weekly_supervision;
+                    document.getElementById('balance-cumulative').textContent = data.cumulative;
+                    balanceBox.hidden = false;
+                });
+        }
+
+        categoryFilter.addEventListener('change', function () {
+            refreshRuleOptions();
+            refreshBalance();
+        });
+        subjectSelect.addEventListener('change', function () {
+            refreshRuleOptions();
+            refreshBalance();
+        });
+        gradeFilter.addEventListener('change', refreshStudentOptions);
+        studentSearch.addEventListener('input', refreshStudentOptions);
+        studentSelect.addEventListener('change', refreshBalance);
+
+        refreshRuleOptions();
+    </script>
+</body>
+</html>

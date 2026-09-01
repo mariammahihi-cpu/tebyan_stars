@@ -1,0 +1,60 @@
+<!-- evaluations/templates/evaluations/activity_log.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>سجل النشاط - نجوم التبيان</title>
+</head>
+<body>
+    <main class="log-page">
+        <h1>سجل النشاط</h1>
+
+        <form method="get" class="inline-form">
+            <label for="staff">فلترة حسب موظفة الإدخال:</label>
+            <select name="staff" id="staff" onchange="this.form.submit()">
+                <option value="">الكل</option>
+                {% for staff in staff_list %}
+                    <option value="{{ staff.pk }}" {% if selected_staff_id == staff.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ staff.full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>الطالب</th>
+                    <th>القاعدة</th>
+                    <th>المادة</th>
+                    <th>القيمة</th>
+                    <th>سجّلتها</th>
+                    <th>الوقت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evaluation in evaluations %}
+                    <tr>
+                        <td>{{ evaluation.student.full_name }}</td>
+                        <td>{{ evaluation.rule.name }}</td>
+                        <td>{% if evaluation.subject %}{{ evaluation.subject.name }}{% else %}—{% endif %}</td>
+                        <td>{% if evaluation.value > 0 %}+{% endif %}{{ evaluation.value }}</td>
+                        <td>{{ evaluation.recorded_by.full_name }}</td>
+                        <td>{{ evaluation.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6">لا يوجد تقييمات مسجّلة بعد</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p>
+            {% if user.is_super_admin %}
+                <a href="{% url 'accounts:super_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% else %}
+                <a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% endif %}
+        </p>
+    </main>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!-- rules/templates/rules/edit_rule.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تعديل قاعدة - نجوم التبيان</title>
+</head>
+<body>
+    <main class="edit-page">
+        <h1>تعديل: {{ object }}</h1>
+
+        {% if not user.is_super_admin %}
+            <p><em>صلاحيتك تسمح بتعديل القيمة بس — باقي تفاصيل القاعدة محصورة بمسؤولة النظام.</em></p>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit">حفظ التعديل</button>
+        </form>
+
+        <p><a href="{% url 'rules:manage_rules' %}">رجوع لقائمة القواعد</a></p>
+    </main>
+</body>
+</html>

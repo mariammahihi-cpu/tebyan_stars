@@ -1,0 +1,84 @@
+<!-- students/templates/students/manage_students.html -->
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدارة الطلاب - نجوم التبيان</title>
+</head>
+<body>
+    <main class="manage-page">
+        <h1>الطلاب</h1>
+
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>رقم القيد</th>
+                    <th>الاسم</th>
+                    <th>الفصل</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                    <tr>
+                        <td>{{ student.student_number }}</td>
+                        <td>{{ student.full_name }}</td>
+                        <td>{{ student.section }}</td>
+                        <td>{% if student.is_active %}مسجّل{% else %}معطّل{% endif %}</td>
+                        <td>
+                            <a href="{% url 'students:edit_student' student.pk %}">تعديل</a>
+
+                            <form method="post" action="{% url 'students:toggle_student_active' student.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit">
+                                    {% if student.is_active %}تعطيل{% else %}تفعيل{% endif %}
+                                </button>
+                            </form>
+
+                            <form method="post" action="{% url 'students:delete_student' student.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('متأكدة من حذف هذا الطالب نهائيًا؟');">حذف</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">لا يوجد طلاب بعد</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>إضافة طالب جديد</h2>
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+        <form method="post" class="inline-form">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit">إضافة</button>
+        </form>
+
+        <p>
+            {% if user.is_super_admin %}
+                <a href="{% url 'accounts:super_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% else %}
+                <a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+            {% endif %}
+        </p>
+    </main>
+</body>
+</html>

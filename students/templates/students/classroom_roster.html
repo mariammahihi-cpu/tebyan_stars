@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}طلاب {{ section }} - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <a href="{% url 'structure:section_list' section.grade_id %}" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع للفصول">
+        <i class="fa-solid fa-arrow-right"></i>
+    </a>
+    <i class="fa-solid fa-users text-brand-dark"></i> طلاب {{ section }}
+{% endblock %}
+
+{% block header_actions %}
+    <button type="button" onclick="toggleQuickAdd()" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">
+        <i class="fa-solid fa-plus"></i> إضافة طالب جديد
+    </button>
+{% endblock %}
+
+{% block content %}
+    <!-- ============ الإضافة السريعة ============ -->
+    <div id="quickAddForm" class="hidden bg-white rounded-xl border border-brand-light p-5 mb-6">
+        <div class="flex gap-3 flex-wrap items-start">
+            <input type="text" id="quickAddName" class="app-input flex-1 min-w-[220px]" placeholder="الاسم الكامل للطالب الجديد">
+            <button type="button" onclick="submitQuickAdd()" class="px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">حفظ</button>
+            <button type="button" onclick="toggleQuickAdd()" class="px-4 py-2 border border-brand-light text-slate-600 text-sm font-semibold rounded-lg hover:bg-brand-bg transition">إلغاء</button>
+        </div>
+        <p class="text-xs text-slate-400 mt-2 mb-0">رقم القيد رح يتولّد تلقائيًا — لا حاجة لإدخاله يدويًا.</p>
+        <p id="quickAddError" class="hidden text-red-600 text-xs mt-2 mb-0"></p>
+    </div>
+
+    <!-- ============ بحث وترتيب ============ -->
+    <form method="get" class="flex gap-3 mb-6">
+        <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 right-4 text-slate-400"></i>
+            <input type="text" name="q" value="{{ search_q }}" placeholder="بحث بالاسم أو رقم القيد..." class="app-input pr-11">
+        </div>
+        <select name="sort" class="app-input w-56" onchange="this.form.submit()">
+            <option value="name" {% if sort == "name" %}selected{% endif %}>الترتيب الأبجدي</option>
+            <option value="points_desc" {% if sort == "points_desc" %}selected{% endif %}>الأعلى رصيدًا</option>
+            <option value="points_asc" {% if sort == "points_asc" %}selected{% endif %}>الأقل رصيدًا</option>
+        </select>
+        <button class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap">بحث</button>
+    </form>
+
+    <!-- ============ جدول الطلاب ============ -->
+    <div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">الاسم</th>
+                        <th class="px-4 py-3 font-semibold">رقم القيد</th>
+                        <th class="px-4 py-3 font-semibold">الرصيد التراكمي</th>
+                        <th class="px-4 py-3 font-semibold">الرصيد الأسبوعي</th>
+                        <th class="px-4 py-3 font-semibold text-center">إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="students-tbody" class="divide-y divide-brand-light">
+                    {% for item in students_data %}
+                        <tr id="student-row-{{ item.student.id }}" class="hover:bg-brand-bg/40 transition {% if not item.student.is_active %}opacity-50{% endif %}">
+                            <td class="px-4 py-3">
+                                <button type="button" onclick="openStudentPanel({{ item.student.id }})" class="flex items-center gap-3 text-right">
+                                    <span class="shrink-0 w-9 h-9 rounded-full bg-brand-dark/10 border border-brand-medium/40 text-brand-dark flex items-center justify-center font-bold">
+                                        {{ item.student.full_name|first|upper }}
+                                    </span>
+                                    <span class="display-name font-medium text-slate-800 hover:text-brand-dark hover:underline">{{ item.student.full_name }}</span>
+                                </button>
+                                <input type="text" class="edit-field name-input app-input hidden mt-1" value="{{ item.student.full_name }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="display-reg text-slate-500" dir="ltr">{{ item.student.student_number }}</span>
+                                <input type="text" class="edit-field reg-input app-input hidden" dir="ltr" value="{{ item.student.student_number }}">
+                            </td>
+                            <td class="px-4 py-3"><span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-gold-dark/15 text-gold-dark">{{ item.cumulative }}</span></td>
+                            <td class="px-4 py-3"><span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-medium/15 text-brand-dark">{{ item.weekly }}</span></td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button type="button" onclick="toggleEditMode({{ item.student.id }})" class="edit-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-dark/10 text-brand-dark hover:bg-brand-dark/20 transition">تعديل</button>
+                                    <button type="button" onclick="toggleActive({{ item.student.id }})"
+                                            class="toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition {% if item.student.is_active %}bg-red-600 hover:bg-red-700{% else %}bg-brand-medium hover:bg-[#57a75b]{% endif %}">
+                                        {% if item.student.is_active %}تعطيل{% else %}تفعيل{% endif %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-12 text-center text-slate-400">
+                                {% if search_q %}لا يوجد طلاب مطابقين لـ"{{ search_q }}".{% else %}لا يوجد طلاب بهذا الفصل بعد. أضيفي أول طالب من الأعلى.{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============ بيانات مخفية لكل طالب — تُحقن باللوحة الجانبية ============ -->
+    {% for item in students_data %}
+        <template id="paneldata-{{ item.student.id }}">
+            <div class="flex items-center gap-3 mb-5">
+                <span class="w-14 h-14 rounded-full bg-brand-dark/10 border border-brand-medium/40 text-brand-dark flex items-center justify-center text-xl font-bold">
+                    {{ item.student.full_name|first|upper }}
+                </span>
+                <div>
+                    <div class="font-bold text-lg text-slate-800">{{ item.student.full_name }}</div>
+                    <div class="text-slate-500 text-xs" dir="ltr">{{ item.student.student_number }}</div>
+                </div>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between border-b border-brand-light pb-2"><span class="text-slate-500">الفصل</span><strong class="text-slate-800">{{ section }}</strong></div>
+                <div class="flex justify-between border-b border-brand-light pb-2"><span class="text-slate-500">الرصيد التراكمي</span><strong class="text-gold-dark">{{ item.cumulative }} نجمة</strong></div>
+                <div class="flex justify-between border-b border-brand-light pb-2"><span class="text-slate-500">الرصيد الأسبوعي</span><strong class="text-brand-dark">{{ item.weekly }} نجمة</strong></div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">الحالة</span>
+                    <strong>{% if item.student.is_active %}<span class="text-brand-dark">مسجّل</span>{% else %}<span class="text-red-600">معطّل</span>{% endif %}</strong>
+                </div>
+            </div>
+        </template>
+    {% endfor %}
+
+    <!-- ============ اللوحة الجانبية المنزلقة ============ -->
+    <div id="sidePanelOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden" onclick="closeStudentPanel()"></div>
+    <aside id="sidePanel" class="fixed top-0 left-0 h-full w-full max-w-sm bg-white border-l border-brand-light shadow-2xl z-50 transition-transform duration-300 overflow-y-auto" style="transform: translateX(-100%);">
+        <div class="h-16 flex items-center justify-between px-6 border-b border-brand-light">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-id-card text-brand-dark"></i> تفاصيل الطالب</h3>
+            <button onclick="closeStudentPanel()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div id="sidePanelBody" class="p-6"></div>
+    </aside>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    const CSRF_TOKEN = getCookie('csrftoken');
+    const SECTION_ID = {{ section.id }};
+
+    /* ============ اللوحة الجانبية ============ */
+    function openStudentPanel(studentId) {
+        const tpl = document.getElementById('paneldata-' + studentId);
+        document.getElementById('sidePanelBody').innerHTML = tpl.innerHTML;
+        document.getElementById('sidePanelOverlay').classList.remove('hidden');
+        document.getElementById('sidePanel').style.transform = 'translateX(0)';
+    }
+    function closeStudentPanel() {
+        document.getElementById('sidePanelOverlay').classList.add('hidden');
+        document.getElementById('sidePanel').style.transform = 'translateX(-100%)';
+    }
+
+    /* ============ الإضافة السريعة ============ */
+    function toggleQuickAdd() {
+        const box = document.getElementById('quickAddForm');
+        box.classList.toggle('hidden');
+        document.getElementById('quickAddError').classList.add('hidden');
+        if (!box.classList.contains('hidden')) {
+            document.getElementById('quickAddName').focus();
+        }
+    }
+
+    function submitQuickAdd() {
+        const nameInput = document.getElementById('quickAddName');
+        const errorBox = document.getElementById('quickAddError');
+        const name = nameInput.value.trim();
+        errorBox.classList.add('hidden');
+
+        fetch(`/students/sections/${SECTION_ID}/quick-add/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({ full_name: name }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                window.location.reload();
+            } else {
+                errorBox.textContent = data.error;
+                errorBox.classList.remove('hidden');
+            }
+        })
+        .catch(() => {
+            errorBox.textContent = 'فشل الاتصال بالخادم';
+            errorBox.classList.remove('hidden');
+        });
+    }
+
+    /* ============ التعديل السريع Inline ============ */
+    function toggleEditMode(studentId) {
+        const row = document.getElementById('student-row-' + studentId);
+        const nameSpan = row.querySelector('.display-name');
+        const regSpan = row.querySelector('.display-reg');
+        const nameInput = row.querySelector('.name-input');
+        const regInput = row.querySelector('.reg-input');
+        const editBtn = row.querySelector('.edit-btn');
+
+        const isEditing = !nameInput.classList.contains('hidden');
+
+        if (!isEditing) {
+            nameSpan.parentElement.classList.add('hidden');
+            regSpan.classList.add('hidden');
+            nameInput.classList.remove('hidden');
+            regInput.classList.remove('hidden');
+            editBtn.textContent = 'حفظ';
+            return;
+        }
+
+        fetch(`/students/${studentId}/edit-ajax/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+            body: JSON.stringify({
+                full_name: nameInput.value.trim(),
+                student_number: regInput.value.trim(),
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                nameSpan.textContent = data.full_name;
+                regSpan.textContent = data.student_number;
+                nameSpan.parentElement.classList.remove('hidden');
+                regSpan.classList.remove('hidden');
+                nameInput.classList.add('hidden');
+                regInput.classList.add('hidden');
+                editBtn.textContent = 'تعديل';
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(() => alert('فشل الاتصال بالخادم'));
+    }
+
+    /* ============ تفعيل/تعطيل — يستخدم نافذة التأكيد المشتركة من base.html ============ */
+    async function toggleActive(studentId) {
+        const row = document.getElementById('student-row-' + studentId);
+        const isActive = !row.classList.contains('opacity-50');
+
+        const ok = await showConfirmModal({
+            title: isActive ? 'تعطيل الطالب' : 'تفعيل الطالب',
+            message: isActive ? 'هل أنتِ متأكدة من تعطيل تسجيل هذا الطالب؟' : 'هل تحبين تفعيل تسجيل هذا الطالب؟',
+            tone: isActive ? 'warning' : 'default',
+        });
+        if (!ok) return;
+
+        fetch(`/students/${studentId}/toggle-ajax/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) return;
+            const btn = row.querySelector('.toggle-btn');
+            if (data.is_active) {
+                row.classList.remove('opacity-50');
+                btn.textContent = 'تعطيل';
+                btn.className = 'toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition bg-red-600 hover:bg-red-700';
+            } else {
+                row.classList.add('opacity-50');
+                btn.textContent = 'تفعيل';
+                btn.className = 'toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition bg-brand-medium hover:bg-[#57a75b]';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}فصول {{ grade }} - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <a href="{% url 'structure:grade_list' %}" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع للصفوف">
+        <i class="fa-solid fa-arrow-right"></i>
+    </a>
+    <i class="fa-solid fa-chalkboard text-brand-dark"></i> فصول {{ grade }}
+{% endblock %}
+
+{% block content %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+        {% for section in sections %}
+            <div class="bg-white rounded-xl border border-brand-light p-5 hover:shadow-md hover:-translate-y-0.5 transition relative group">
+                <a href="{% url 'students:classroom_roster' section.id %}" class="block">
+                    <div class="w-11 h-11 rounded-lg bg-brand-dark/10 text-brand-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-chalkboard"></i>
+                    </div>
+                    <div class="text-lg font-bold text-slate-800">{{ section.name }}</div>
+                    <div class="text-xs text-slate-500 mt-1">{{ section.get_gender_display }}</div>
+                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-user-graduate"></i> {{ section.student_count }} طالب
+                    </div>
+                </a>
+                {% if user.is_super_admin %}
+                    <div class="absolute top-3 left-3 hidden group-hover:flex gap-1">
+                        <a href="{% url 'structure:edit_section' section.pk %}" class="w-7 h-7 rounded-lg bg-white border border-brand-light flex items-center justify-center text-brand-dark hover:bg-brand-bg transition" title="تعديل">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </a>
+                        <form method="post" action="{% url 'structure:delete_section' section.pk %}"
+                              data-confirm-title="حذف الفصل"
+                              data-confirm="هل أنتِ متأكدة من حذف {{ section }}؟ هذا الإجراء نهائي."
+                              data-confirm-tone="danger">
+                            {% csrf_token %}
+                            <button type="submit" class="w-7 h-7 rounded-lg bg-white border border-red-200 flex items-center justify-center text-red-600 hover:bg-red-50 transition" title="حذف">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="col-span-full text-center text-slate-400 py-12">لا يوجد فصول بهذا الصف بعد</p>
+        {% endfor %}
+    </div>
+
+    {% if user.is_super_admin %}
+        <div class="bg-white rounded-xl border border-brand-light p-6 max-w-sm">
+            <h2 class="text-base font-bold text-slate-800 mb-4">إضافة فصل جديد لـ{{ grade }}</h2>
+            {% if form.non_field_errors %}
+                <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                    {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                </div>
+            {% endif %}
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-[#154d19] transition">إضافة</button>
+            </form>
+        </div>
+    {% endif %}
+{% endblock %}

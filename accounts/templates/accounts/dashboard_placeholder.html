@@ -1,0 +1,12 @@
+<!-- accounts/templates/accounts/dashboard_placeholder.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - نجوم التبيان{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <div class="bg-white rounded-xl border border-brand-light p-6">
+        <p class="text-slate-600">مرحبًا، {{ user.full_name }}</p>
+        <p class="text-slate-400 text-sm mt-2">هذه صفحة مؤقتة — رح تنستبدل بمحتوى فعلي لاحقًا.</p>
+    </div>
+{% endblock %}

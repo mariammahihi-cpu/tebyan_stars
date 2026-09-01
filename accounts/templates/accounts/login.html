@@ -1,0 +1,381 @@
+<!-- accounts/templates/accounts/login.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - نجوم التبيان</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-page:        #E8F5E9;
+            --bg-card:        #ffffff;
+            --border-default: #A5D6A7;
+            --border-hover:   #7CB342;
+            --accent:         #1B5E20;
+            --accent-hover:   #154d19;
+            --text-primary:   #1e293b;
+            --text-secondary: #64748b;
+            --gold:           #F9A825;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        ::selection {
+            background: rgba(27, 94, 32, 0.20);
+            color: var(--text-primary);
+        }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .page-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            direction: rtl;
+        }
+
+        .form-section {
+            flex: 1;
+            background-color: var(--bg-page);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-card);
+            padding: 45px 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border-default);
+            box-shadow: 0 12px 35px rgba(27, 94, 32, 0.12);
+        }
+
+        .login-box h2 {
+            color: var(--text-primary);
+            font-size: 26px;
+            margin-bottom: 35px;
+            font-weight: 700;
+        }
+
+        .alert-error {
+            background-color: rgba(220, 38, 38, 0.08);
+            color: #b91c1c;
+            border: 1px solid rgba(220, 38, 38, 0.25);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .input-container {
+            position: relative;
+            margin-bottom: 28px;
+            width: 100%;
+        }
+
+        .input-container input {
+            width: 100%;
+            padding: 16px;
+            font-size: 15px;
+            border: 1.5px solid var(--border-default);
+            border-radius: 10px;
+            outline: none;
+            background: var(--bg-card);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            color: var(--text-primary);
+            text-align: right;
+            caret-color: var(--accent);
+        }
+
+        .input-container input::placeholder {
+            color: transparent;
+        }
+
+        .input-container input:hover {
+            border-color: var(--border-hover);
+        }
+
+        /* إصلاح خلفية الإكمال التلقائي (Chrome/Edge) عشان تطلع بيضاء مو رمادي غريب */
+        .input-container input:-webkit-autofill,
+        .input-container input:-webkit-autofill:hover,
+        .input-container input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-primary);
+            -webkit-box-shadow: 0 0 0px 1000px var(--bg-card) inset;
+            caret-color: var(--text-primary);
+            transition: background-color 9999s ease-in-out 0s;
+        }
+
+        .password-wrapper input {
+            padding-left: 45px;
+        }
+
+        .input-container label {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-card);
+            padding: 0 6px;
+            color: var(--text-secondary);
+            font-size: 15px;
+            pointer-events: none;
+            transition: 0.2s ease all;
+        }
+
+        .input-container.focused label,
+        .input-container input:focus ~ label,
+        .input-container input:not(:placeholder-shown) ~ label {
+            top: 0;
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .input-container.focused input,
+        .input-container input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.15);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+
+        .toggle-password:hover {
+            color: var(--accent);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(180deg, #2e7d32 0%, var(--accent) 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(180deg, #388e3c 0%, #2e7d32 100%);
+            box-shadow: 0 6px 20px rgba(27, 94, 32, 0.30);
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(27, 94, 32, 0.20);
+        }
+
+        .brand-section {
+            flex: 1;
+            background: linear-gradient(145deg, #E8F5E9 0%, #C8E6C9 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--text-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-section::before {
+            content: "";
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            background: radial-gradient(circle, rgba(249, 168, 37, 0.18) 0%, transparent 70%);
+            top: -80px;
+            left: -80px;
+            pointer-events: none;
+        }
+
+        .brand-content {
+            text-align: center;
+            max-width: 450px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-glass-card {
+            width: 180px;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 25px auto;
+            border: 1px solid var(--border-default);
+            box-shadow: 0 20px 40px rgba(27, 94, 32, 0.15);
+            overflow: hidden;
+        }
+
+        .logo-img {
+            width: 82%;
+            height: 82%;
+            object-fit: contain;
+            transform: scale(1.6);
+        }
+
+        .logo-star {
+            font-size: 56px;
+            color: var(--gold);
+        }
+
+        .brand-content h1 {
+            font-size: 44px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+        }
+
+        .brand-content p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                flex-direction: column-reverse;
+            }
+            .brand-section {
+                height: 35%;
+                flex: none;
+                padding: 20px;
+            }
+            .form-section {
+                height: 65%;
+                flex: none;
+                padding: 20px;
+            }
+            .brand-content h1 {
+                font-size: 32px;
+            }
+            .logo-glass-card {
+                width: 120px;
+                height: 120px;
+                margin-bottom: 15px;
+            }
+
+            .logo-star {
+                font-size: 38px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+
+        <div class="form-section">
+            <div class="login-box">
+                <h2>تسجيل دخول للنظام</h2>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <div class="alert-error">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <div class="input-container">
+                        <input type="text" id="username" name="username" required placeholder=" ">
+                        <label for="username">اسم المستخدم</label>
+                    </div>
+
+                    <div class="input-container password-wrapper">
+                        <input type="password" id="password" name="password" required placeholder=" ">
+                        <label for="password">كلمة المرور</label>
+                        <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
+
+                    <button type="submit" class="submit-btn">تسجيل</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="brand-section">
+            <div class="brand-content">
+                <div class="logo-glass-card">
+                    <img src="{% static 'images/logo.png' %}" alt="شعار نجوم التبيان" class="logo-img">
+                </div>
+                <h1>نجوم التبيان</h1>
+                <p>نحتفي بتميّز كل طالب وطالبة، نجمة نجمة.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const passwordInput = document.getElementById('password');
+            const togglePasswordIcon = document.getElementById('togglePassword');
+
+            if (togglePasswordIcon && passwordInput) {
+                togglePasswordIcon.addEventListener('click', function () {
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    this.classList.toggle('fa-eye');
+                    this.classList.toggle('fa-eye-slash');
+                });
+            }
+
+            const inputs = document.querySelectorAll('.input-container input');
+            inputs.forEach(input => {
+                if (input.value !== "") {
+                    input.parentElement.classList.add('focused');
+                }
+                input.addEventListener('focus', () => {
+                    input.parentElement.classList.add('focused');
+                });
+                input.addEventListener('blur', () => {
+                    if (input.value === "") {
+                        input.parentElement.classList.remove('focused');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
