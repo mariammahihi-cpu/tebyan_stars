@@ -23,9 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-uqzz-$qw2g772-!0cjhn#5e#nfr6*f$^0=10b_7#o3-2i7-l@j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -41,12 +42,23 @@ INSTALLED_APPS = [
     'structure',
     'students',
     'rules',
-    'evaluations'
+    'evaluations',
+    'reports',
+    'analytics',
+    'django.forms',
+    'leaderboard',
 ]
+
+# يسمح بتخصيص قوالب عناصر الفورمات المدمجة عالميًا (زي مفتاح Boolean
+# وصندوق اختيار متعدد) بوضع قالب بنفس الاسم داخل templates/django/forms/widgets/
+# بأي تطبيق مُدرَج فوق — بدل التصميم الافتراضي (Bootstrap-like) لكل فورمات
+# النظام دفعة وحدة. راجعي accounts/templates/django/forms/widgets/.
+FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -126,6 +138,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 # Email

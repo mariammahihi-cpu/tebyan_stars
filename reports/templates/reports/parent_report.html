@@ -1,0 +1,85 @@
+{% extends "reports/_base_pdf.html" %}
+
+{% block report_title %}تقرير أداء الطالب{% endblock %}
+{% block report_subtitle %}تقرير مُعَدّ لولي الأمر{% endblock %}
+
+{% block extra_style %}
+    .section-heading {
+        font-size: 13px; font-weight: 800; color: #1B5E20;
+        margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #A5D6A7;
+    }
+{% endblock %}
+
+{% block report_content %}
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-label">اسم الطالب</div>
+            <div class="info-value">{{ student.full_name }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">الفصل</div>
+            <div class="info-value">{{ section }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">الرصيد الأسبوعي</div>
+            <div class="info-value">{{ weekly_total }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">الرصيد التراكمي</div>
+            <div class="info-value">{{ cumulative_total }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">اتجاه الأداء</div>
+            <div class="info-value" style="color: {{ trend.color }};">{{ trend.icon }} {{ trend.label }}</div>
+        </div>
+    </div>
+
+    {% if entries %}
+        <table>
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>المادة</th>
+                    <th>القاعدة</th>
+                    <th>القيمة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.created_at|date:"Y-m-d" }}</td>
+                        <td>{% if entry.subject %}{{ entry.subject.name }}{% else %}إشراف عام{% endif %}</td>
+                        <td>{{ entry.rule.name }}</td>
+                        <td class="{% if entry.value > 0 %}value-add{% else %}value-deduct{% endif %}">
+                            {% if entry.value > 0 %}+{% endif %}{{ entry.value }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-note">لا توجد أي تقييمات مسجّلة لهذا الطالب حتى الآن.</p>
+    {% endif %}
+
+    <h2 class="section-heading">عمليات تاجر التبيان</h2>
+    {% if pos_transactions %}
+        <table>
+            <thead>
+                <tr>
+                    <th>التاريخ</th>
+                    <th>التفاصيل</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in pos_transactions %}
+                    <tr>
+                        <td>{{ tx.date|date:"Y-m-d" }}</td>
+                        <td>{{ tx.description }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-note">لا توجد عمليات تحويل مسجّلة لهذا الطالب.</p>
+    {% endif %}
+{% endblock %}

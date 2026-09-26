@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}أرشيف الالتزام - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-box-archive text-brand-dark"></i> أرشيف التزام الفصول{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'analytics:dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+        <i class="fa-solid fa-chart-line"></i> العودة للوحة التحليلات
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="entity-card p-6">
+        <h2 class="font-bold text-slate-800 mb-1 flex items-center gap-2">
+            <i class="fa-solid fa-table-cells text-brand-dark"></i> خريطة التزام الفصول بالتقييم
+        </h2>
+        <p class="text-xs text-slate-400 mb-5">نفس خريطة لوحة التحليلات، بس قابلة للتصفح عبر كل تاريخ النظام — 6 أسابيع بكل صفحة</p>
+
+        <!-- ============ شريط التصفح ============ -->
+        <div class="flex items-center justify-between gap-3 mb-5 flex-wrap">
+            <div class="text-sm text-slate-600">
+                {% if range_start %}
+                    الفترة: <span class="font-semibold text-slate-800">{{ range_start|date:"Y-m-d" }}</span> إلى <span class="font-semibold text-slate-800">{{ range_end|date:"Y-m-d" }}</span>
+                {% else %}
+                    الفترة: <span class="font-semibold text-slate-800">منذ بداية استخدام النظام</span> إلى <span class="font-semibold text-slate-800">{{ range_end|date:"Y-m-d" }}</span>
+                {% endif %}
+                <span class="text-slate-400"> — صفحة {{ page|add:1 }} من {{ total_pages }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if has_previous %}
+                    <a href="?page={{ page|add:"-1" }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-bg text-brand-dark hover:bg-brand-light/50 transition">
+                        الأسابيع الأحدث <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-300 cursor-not-allowed">
+                        الأسابيع الأحدث <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                {% endif %}
+                {% if has_next %}
+                    <a href="?page={{ page|add:"1" }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-bg text-brand-dark hover:bg-brand-light/50 transition">
+                        <i class="fa-solid fa-arrow-left"></i> أسابيع أقدم
+                    </a>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-300 cursor-not-allowed">
+                        <i class="fa-solid fa-arrow-left"></i> أسابيع أقدم
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr>
+                        <th class="text-right px-3 py-2 text-slate-500 font-semibold whitespace-nowrap">الفصل</th>
+                        {% for label in week_labels %}
+                            <th class="px-3 py-2 text-center text-slate-500 font-semibold whitespace-nowrap">{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in heatmap_rows %}
+                        <tr class="border-t border-slate-100">
+                            <td class="px-3 py-2.5 font-medium text-slate-700 whitespace-nowrap">{{ row.section }}</td>
+                            {% for cell in row.cells %}
+                                <td class="px-3 py-2.5 text-center">
+                                    {% if cell.percent is None %}
+                                        <span class="inline-flex items-center justify-center w-14 h-8 rounded-lg bg-slate-100 text-slate-400 text-xs">—</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center justify-center w-14 h-8 rounded-lg text-xs font-bold"
+                                              style="background: {% if cell.percent >= 80 %}#DCFCE7{% elif cell.percent >= 40 %}#FEF9C3{% else %}#FEE2E2{% endif %}; color: {% if cell.percent >= 80 %}#166534{% elif cell.percent >= 40 %}#854D0E{% else %}#991B1B{% endif %};">
+                                            {{ cell.percent }}٪
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{{ week_labels|length|add:1 }}" class="px-4 py-12 text-center text-slate-400">لا يوجد فصول بعد.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

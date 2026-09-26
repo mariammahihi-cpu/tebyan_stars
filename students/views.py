@@ -8,7 +8,9 @@ from django.views.decorators.http import require_POST
 
 from accounts.permissions import school_admin_required
 from evaluations.models import Evaluation
-from structure.models import Section
+from rules.models import RuleCategory
+from structure.models import Section, SectionSubject
+
 
 from .models import Student
 
@@ -50,8 +52,10 @@ def classroom_roster(request, section_id):
     students_data = [
         {
             "student": s,
-            "cumulative": Evaluation.cumulative_total(s),
-            "weekly": Evaluation.weekly_total(s),
+            "cumulative_subjects": Evaluation.cumulative_total(s, category=RuleCategory.SUBJECT),
+            "cumulative_supervision": Evaluation.cumulative_total(s, category=RuleCategory.GENERAL),
+            "weekly_subjects": Evaluation.weekly_total(s, category=RuleCategory.SUBJECT),
+            "weekly_supervision": Evaluation.weekly_total(s, category=RuleCategory.GENERAL),
         }
         for s in students_list
     ]
@@ -61,6 +65,32 @@ def classroom_roster(request, section_id):
         "students_data": students_data,
         "search_q": search_q,
         "sort": sort,
+    })
+
+
+@school_admin_required
+def student_detail(request, student_id):
+    student = get_object_or_404(Student, pk=student_id)
+    section = student.section
+
+    subject_rows = [
+        {
+            "subject": section_subject.subject,
+            "weekly": Evaluation.weekly_total(student, subject=section_subject.subject),
+            "cumulative": Evaluation.cumulative_total(student, subject=section_subject.subject),
+        }
+        for section_subject in SectionSubject.objects.filter(section=section)
+            .select_related("subject").order_by("subject__name")
+    ]
+
+    return render(request, "students/student_detail.html", {
+        "student": student,
+        "section": section,
+        "subject_rows": subject_rows,
+        "cumulative_subjects": Evaluation.cumulative_total(student, category=RuleCategory.SUBJECT),
+        "cumulative_supervision": Evaluation.cumulative_total(student, category=RuleCategory.GENERAL),
+        "weekly_subjects": Evaluation.weekly_total(student, category=RuleCategory.SUBJECT),
+        "weekly_supervision": Evaluation.weekly_total(student, category=RuleCategory.GENERAL),
     })
 
 
@@ -76,7 +106,7 @@ def quick_add_student(request, section_id):
 
     full_name = (payload.get("full_name") or "").strip()
     if not full_name:
-        return JsonResponse({"ok": False, "error": "لازم تكتبي اسم الطالب"}, status=400)
+        return JsonResponse({"ok": False, "error": "يجب إدخال اسم الطالب"}, status=400)
 
     student = Student.objects.create(
         full_name=full_name,

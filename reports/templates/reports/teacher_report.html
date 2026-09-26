@@ -1,0 +1,90 @@
+{% extends "reports/_base_pdf.html" %}
+
+{% block report_title %}تقرير أداء طلاب المعلّمة{% endblock %}
+{% block report_subtitle %}{{ teacher.full_name }}{% endblock %}
+
+{% block extra_style %}
+    .scope-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .scope-badge {
+        background: #FFF8E1; border: 1px solid #FCD34D; color: #92400E;
+        border-radius: 999px; padding: 4px 12px; font-size: 10px; font-weight: 700;
+    }
+    .section-heading {
+        font-size: 13px; font-weight: 800; color: #1B5E20;
+        margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #A5D6A7;
+    }
+{% endblock %}
+
+{% block report_content %}
+    {% if assignments %}
+        <div class="scope-badges">
+            {% for assignment in assignments %}
+                <span class="scope-badge">{{ assignment.subject.name }} — {{ assignment.section }}</span>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-heading">ملخص الرصيد حسب كل طالبة ومادة</h2>
+        {% if summary_rows %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>الطالبة</th>
+                        <th>الفصل</th>
+                        <th>المادة</th>
+                        <th>الرصيد الأسبوعي</th>
+                        <th>الرصيد التراكمي</th>
+                        <th>اتجاه الأداء</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in summary_rows %}
+                        <tr>
+                            <td>{{ row.student.full_name }}</td>
+                            <td>{{ row.section }}</td>
+                            <td>{{ row.subject.name }}</td>
+                            <td>{{ row.weekly }}</td>
+                            <td>{{ row.cumulative }}</td>
+                            <td style="color: {{ row.trend.color }};">{{ row.trend.icon }} {{ row.trend.label }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-note">لا توجد طالبات فاعلات ضمن نطاق تكليف هذه المعلّمة حاليًا.</p>
+        {% endif %}
+
+        <h2 class="section-heading">سجل التقييمات التفصيلي</h2>
+        {% if entries %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>الطالبة</th>
+                        <th>الفصل</th>
+                        <th>المادة</th>
+                        <th>القاعدة</th>
+                        <th>القيمة</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.student.full_name }}</td>
+                            <td>{{ entry.student.section }}</td>
+                            <td>{{ entry.subject.name }}</td>
+                            <td>{{ entry.rule.name }}</td>
+                            <td class="{% if entry.value > 0 %}value-add{% else %}value-deduct{% endif %}">
+                                {% if entry.value > 0 %}+{% endif %}{{ entry.value }}
+                            </td>
+                            <td>{{ entry.created_at|date:"Y-m-d" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-note">لا توجد أي تقييمات مسجّلة ضمن نطاق هذه المعلّمة حتى الآن.</p>
+        {% endif %}
+    {% else %}
+        <p class="empty-note">لا يوجد أي تكليف (فصل/مادة) مسجّل لهذه المعلّمة حتى الآن.</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}الرئيسية - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-house text-brand-dark"></i> مرحبًا، {{ user.full_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .cov-cell {
+        width: 40px; height: 40px; border-radius: 8px; display: flex;
+        align-items: center; justify-content: center; margin: auto;
+        font-size: 13px; transition: transform .1s ease;
+    }
+    a.cov-cell:hover { transform: scale(1.08); }
+
+    /* تم التقييم — أخضر مصمت واضح، أبرز حالة بالجدول */
+    .cov-covered { background: #2E7D32; color: #fff; font-size: 14px; }
+
+    /* لا يوجد تقييم — تحتاج فعل من الموظفة، لازم تبرز أكثر من "لا تنطبق" */
+    .cov-empty {
+        background: #FEF3C7;
+        color: #B45309;
+        border: 1.5px solid #FCD34D;
+        font-weight: 800;
+        font-size: 15px;
+    }
+
+    /* لا تنطبق — حالة طبيعية لا تحتاج انتباه، أخف حضور بالتصميم عن قصد */
+    .cov-na {
+        background: transparent;
+        color: #cbd5e1;
+        font-size: 14px;
+    }
+
+    .progress-track { background: #e2e8f0; border-radius: 999px; height: 10px; overflow: hidden; }
+    .progress-fill { background: #1B5E20; height: 100%; border-radius: 999px; transition: width .3s ease; }
+
+    /* نسخة الشريط الفاتحة تُستخدم فوق خلفية غامقة (بطاقة الإنجاز) عشان تتباين معها */
+    .progress-track-on-dark { background: rgba(255,255,255,.25); border-radius: 999px; height: 10px; overflow: hidden; }
+    .progress-fill-on-dark { background: #FFD54F; height: 100%; border-radius: 999px; transition: width .3s ease; }
+
+    details > summary { list-style: none; cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] .details-chevron { transform: rotate(180deg); }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- ===== صف علوي: ملخص + فصول محتاجة إدخال جنب بعض على شاشة عريضة ===== -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-start">
+
+        <!-- ===== ملخص مضغوط ===== -->
+        <div class="bg-brand-dark rounded-xl p-5 lg:col-span-1 text-white">
+            <p class="font-bold">
+                أنجزتِ <i class="fa-solid fa-star text-gold-dark"></i> {{ done_pairs }} من {{ total_pairs }} فصل/مادة هذا الأسبوع
+                <span class="text-gold-light">({{ progress_percent }}٪)</span>
+            </p>
+            <p class="text-xs text-white/70 mt-1 mb-3"><i class="fa-regular fa-calendar ml-1"></i> {{ week_label }}</p>
+
+            <div class="progress-track-on-dark mb-4">
+                <div class="progress-fill-on-dark" style="width: {{ progress_percent }}%;"></div>
+            </div>
+
+            <a href="{% url 'evaluations:apply_evaluation' %}"
+               class="bg-white text-brand-dark font-bold text-sm rounded-lg px-4 py-2 hover:bg-brand-bg transition inline-flex items-center gap-1.5 w-full justify-center">
+                <i class="fa-solid fa-star ml-1"></i> تطبيق تقييم
+            </a>
+        </div>
+
+        <!-- ===== فصول محتاجة إدخال ===== -->
+        <div class="bg-white rounded-xl border border-brand-light p-5 lg:col-span-2">
+            <div class="flex items-center gap-2 mb-1">
+                <h2 class="font-bold text-slate-800">فصول محتاجة إدخال</h2>
+                {% if needs_entry %}
+                    <span class="text-xs font-bold bg-amber-100 text-amber-700 rounded-full px-2.5 py-0.5">{{ needs_entry|length }} فصل</span>
+                {% endif %}
+            </div>
+            <p class="text-sm text-slate-500 mb-4">أقل من نصف موادها مُقيّمة هذا الأسبوع</p>
+
+            {% if needs_entry %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {% for item in needs_entry %}
+                        <a href="{% url 'evaluations:apply_evaluation' %}?section={{ item.section.id }}"
+                           title="{{ item.section }}"
+                           class="flex items-start gap-2 rounded-lg p-3 transition group bg-white border border-slate-200 border-r-4
+                                  {% if item.severity == 'danger' %}border-r-red-400 hover:bg-red-50/60
+                                  {% elif item.severity == 'warning' %}border-r-amber-400 hover:bg-amber-50/60
+                                  {% else %}border-r-slate-300 hover:bg-slate-50{% endif %}">
+                            <i class="fa-solid fa-triangle-exclamation mt-0.5 shrink-0
+                                      {% if item.severity == 'danger' %}text-red-500
+                                      {% elif item.severity == 'warning' %}text-amber-500
+                                      {% else %}text-slate-400{% endif %}"></i>
+                            <div class="min-w-0 flex-1">
+                                <div class="text-slate-700 font-semibold text-sm leading-snug line-clamp-2">{{ item.section }}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">{{ item.covered }} من {{ item.total }} مواد مُقيّمة</div>
+                            </div>
+                            <i class="fa-solid fa-arrow-left text-brand-dark text-xs mt-1 opacity-0 group-hover:opacity-100 transition shrink-0"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-brand-dark bg-brand-bg rounded-lg py-4 text-center font-medium">
+                    <i class="fa-solid fa-circle-check ml-1"></i> كل الفصول عندها نصف موادها أو أكثر مُقيّمة هذا الأسبوع
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== الخريطة التفصيلية (مطوية) ===== -->
+    <details class="bg-white rounded-xl border border-brand-light p-5">
+        <summary class="flex items-center justify-between font-bold text-slate-800">
+            <span><i class="fa-solid fa-table-cells ml-1 text-brand-dark"></i> عرض تفاصيل التغطية الكاملة</span>
+            <i class="fa-solid fa-chevron-down details-chevron transition text-slate-400"></i>
+        </summary>
+
+        <div class="mt-4">
+            <div class="flex items-center gap-5 text-xs mb-4 flex-wrap">
+                <span class="flex items-center gap-1.5 font-semibold text-slate-600">
+                    <span class="w-5 h-5 rounded-md inline-flex items-center justify-center text-white text-[10px]" style="background:#2E7D32;">
+                        <i class="fa-solid fa-check"></i>
+                    </span>
+                    تم التقييم
+                </span>
+                <span class="flex items-center gap-1.5 font-semibold text-amber-700">
+                    <span class="w-5 h-5 rounded-md inline-flex items-center justify-center text-[11px] font-extrabold" style="background:#FEF3C7; border:1.5px solid #FCD34D; color:#B45309;">
+                        <i class="fa-solid fa-exclamation"></i>
+                    </span>
+                    لا يوجد تقييم — يحتاج إدخال
+                </span>
+                <span class="flex items-center gap-1.5 text-slate-400">
+                    <span class="w-5 h-5 rounded-md inline-flex items-center justify-center text-xs">–</span>
+                    لا تنطبق
+                </span>
+            </div>
+
+            {% if subjects %}
+                <div class="overflow-x-auto">
+                    <table class="text-sm text-center border-separate" style="border-spacing: 6px;">
+                        <thead>
+                            <tr>
+                                <th class="text-right px-2 text-xs text-slate-500 font-semibold sticky right-0 bg-white">الفصل</th>
+                                {% for subject in subjects %}
+                                    <th class="text-xs text-slate-500 font-semibold px-1 whitespace-nowrap" style="min-width: 44px;">{{ subject.name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in grid_rows %}
+                                <tr>
+                                    <td class="text-right px-2 text-sm font-medium text-slate-700 whitespace-nowrap sticky right-0 bg-white">{{ row.section }}</td>
+                                    {% for cell in row.cells %}
+                                        <td>
+                                            {% if cell.applicable %}
+                                                <a href="{% url 'evaluations:apply_evaluation' %}?section={{ row.section.id }}&category=subject&subject={{ cell.subject.id }}"
+                                                   class="cov-cell {% if cell.covered %}cov-covered{% else %}cov-empty{% endif %}"
+                                                   title="{{ row.section }} - {{ cell.subject.name }}: {% if cell.covered %}تم التقييم{% else %}لا يوجد تقييم — يحتاج إدخال{% endif %}">
+                                                    {% if cell.covered %}
+                                                        <i class="fa-solid fa-check"></i>
+                                                    {% else %}
+                                                        <i class="fa-solid fa-exclamation"></i>
+                                                    {% endif %}
+                                                </a>
+                                            {% else %}
+                                                <span class="cov-cell cov-na" title="{{ cell.subject.name }} لا تنطبق على {{ row.section }}">–</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-slate-400 py-8 text-center">لا توجد مواد مُضافة بعد</p>
+            {% endif %}
+        </div>
+    </details>
+{% endblock %}

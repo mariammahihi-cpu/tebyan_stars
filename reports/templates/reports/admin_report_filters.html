@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير المديرة - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-file-lines text-brand-dark"></i> تقرير المديرة{% endblock %}
+
+{% block content %}
+    <div class="bg-white rounded-xl border border-brand-light p-6 max-w-2xl">
+        <p class="text-sm text-slate-500 mb-5">
+            اختاري فلترًا واحدًا على الأقل — يمكن الجمع بين أكثر من فلتر بنفس الوقت (مثلًا فصل معيّن +
+            مادة معيّنة) — ثم اضغطي "توليد التقرير". هذا التقرير يشمل كل بيانات التدقيق (وقت التسجيل
+            الدقيق وهوية موظفة الإدخال)، وهو محصور بالمديرة والمسؤولة فقط.
+        </p>
+        <form method="get" action="{% url 'reports:admin_report_pdf' %}" target="_blank" onsubmit="return validateAdminReportFilters()" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">الطالب</label>
+                <select name="student" class="app-input admin-filter-input">
+                    <option value="">— بدون فلترة —</option>
+                    {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.full_name }} ({{ student.section }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">الفصل</label>
+                <select name="section" class="app-input admin-filter-input">
+                    <option value="">— بدون فلترة —</option>
+                    {% for section in sections %}
+                        <option value="{{ section.id }}">{{ section }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">المادة</label>
+                <select name="subject" class="app-input admin-filter-input">
+                    <option value="">— بدون فلترة —</option>
+                    {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">المعلّمة</label>
+                <select name="teacher" class="app-input admin-filter-input">
+                    <option value="">— بدون فلترة —</option>
+                    {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">
+                <i class="fa-solid fa-file-pdf"></i> توليد التقرير
+            </button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function validateAdminReportFilters() {
+        const anySelected = Array.from(document.querySelectorAll('.admin-filter-input')).some(el => el.value !== '');
+        if (!anySelected) {
+            alert('اختاري فلترًا واحدًا على الأقل قبل توليد التقرير.');
+            return false;
+        }
+        return true;
+    }
+</script>
+{% endblock %}

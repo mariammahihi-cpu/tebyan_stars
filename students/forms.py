@@ -10,7 +10,7 @@ class StudentForm(forms.ModelForm):
         model = Student
         fields = ["student_number", "full_name", "section"]
         widgets = {
-            "student_number": forms.TextInput(attrs={"class": "form-control"}),
-            "full_name": forms.TextInput(attrs={"class": "form-control"}),
-            "section": forms.Select(attrs={"class": "form-control"}),
+            "student_number": forms.TextInput(attrs={"class": "app-input"}),
+            "full_name": forms.TextInput(attrs={"class": "app-input"}),
+            "section": forms.Select(attrs={"class": "app-input"}),
         }

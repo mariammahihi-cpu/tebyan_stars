@@ -1,4 +1,3 @@
-<!-- structure/templates/structure/manage_teachers.html -->
 {% extends "base.html" %}
 
 {% block title %}المعلّمات - نجوم التبيان{% endblock %}
@@ -7,75 +6,112 @@
     <i class="fa-solid fa-chalkboard-user text-brand-dark"></i> المعلّمات
 {% endblock %}
 
+{% block header_actions %}
+    {% if user.is_super_admin %}
+        <button type="button" onclick="openModal('addTeacherModal')" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+            <i class="fa-solid fa-plus"></i> معلّمة جديدة
+        </button>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
-    <div class="bg-white rounded-xl border border-brand-light overflow-hidden mb-6">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-right">
-                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
-                    <tr>
-                        <th class="px-4 py-3 font-semibold">اسم المعلّمة</th>
-                        <th class="px-4 py-3 font-semibold">بتدرّس</th>
-                        {% if user.is_super_admin %}<th class="px-4 py-3 font-semibold text-center">إجراء</th>{% endif %}
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-brand-light">
-                    {% for teacher in teachers %}
-                        <tr class="hover:bg-brand-bg/40 transition">
-                            <td class="px-4 py-3 text-slate-800 font-medium align-top">{{ teacher.full_name }}</td>
-                            <td class="px-4 py-3 text-slate-600 align-top">
-                                {% for item in teacher.section_subjects.all %}
-                                    <div class="mb-1">{{ item.section }} - {{ item.subject }}</div>
-                                {% empty %}
-                                    <span class="text-slate-400 italic">لا يوجد تدريس مسجّل بعد</span>
-                                {% endfor %}
-                                {% if user.is_super_admin %}
-                                    <a href="{% url 'structure:manage_section_subjects' %}?teacher={{ teacher.pk }}" class="inline-flex items-center gap-1 text-brand-dark text-xs font-semibold hover:underline mt-1">
-                                        <i class="fa-solid fa-plus"></i> إضافة تدريس جديد
-                                    </a>
-                                {% endif %}
-                            </td>
-                            {% if user.is_super_admin %}
-                                <td class="px-4 py-3 text-center align-top">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <a href="{% url 'structure:edit_teacher' teacher.pk %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-dark/10 text-brand-dark hover:bg-brand-dark/20 transition">تعديل</a>
-                                        <form method="post" action="{% url 'structure:delete_teacher' teacher.pk %}"
-                                              data-confirm-title="حذف المعلّمة"
-                                              data-confirm="هل أنتِ متأكدة من حذف {{ teacher.full_name }}؟ هذا الإجراء نهائي."
-                                              data-confirm-tone="danger">
-                                            {% csrf_token %}
-                                            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition">حذف</button>
-                                        </form>
-                                    </div>
-                                </td>
+    <div class="entity-card-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+        {% for teacher in teachers %}
+            <div class="entity-card p-5 hover:-translate-y-0.5 transition group">
+                <i class="fa-solid fa-chalkboard-user entity-card-watermark text-brand-dark"></i>
+                <a href="{% url 'structure:teacher_detail' teacher.pk %}" class="relative z-10 block">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-lg font-bold text-slate-800 truncate">{{ teacher.full_name }}</div>
+                        </div>
+                        <div class="entity-avatar-circle">{{ teacher.full_name|first|upper }}</div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% if teacher.link_count == 0 %}
+                            <span class="entity-tag entity-tag-muted">بلا تكليف حاليًا</span>
+                        {% else %}
+                            {% for subject_name in teacher.subject_names|slice:":2" %}
+                                <span class="entity-tag entity-tag-subject">{{ subject_name }}</span>
+                            {% endfor %}
+                            {% if teacher.subject_names|length > 2 %}
+                                <span class="entity-tag entity-tag-subject">+{{ teacher.subject_names|length|add:"-2" }}</span>
                             {% endif %}
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="3" class="px-4 py-12 text-center text-slate-400">لا يوجد معلّمات بعد</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <span class="entity-tag entity-tag-count">
+                                {% if teacher.link_count == 1 %}رابط واحد
+                                {% elif teacher.link_count == 2 %}رابطان
+                                {% else %}{{ teacher.link_count }} روابط{% endif %}
+                            </span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% if user.is_super_admin %}
+                    <div class="absolute top-3 left-3 hidden group-hover:flex gap-1 z-20">
+                        <a href="{% url 'structure:edit_teacher' teacher.pk %}" class="w-7 h-7 rounded-lg bg-white border border-brand-light flex items-center justify-center text-brand-dark hover:bg-brand-bg transition" title="تعديل">
+                            <i class="fa-solid fa-pen text-xs"></i>
+                        </a>
+                        <form method="post" action="{% url 'structure:delete_teacher' teacher.pk %}"
+                              data-confirm-title="حذف المعلّمة"
+                              data-confirm="هل أنتِ متأكدة من حذف {{ teacher.full_name }}؟ هذا الإجراء نهائي."
+                              data-confirm-tone="danger">
+                            {% csrf_token %}
+                            <button type="submit" class="w-7 h-7 rounded-lg bg-white border border-red-200 flex items-center justify-center text-red-600 hover:bg-red-50 transition" title="حذف">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="col-span-full text-center text-slate-400 py-12">لا يوجد معلّمات بعد</p>
+        {% endfor %}
     </div>
 
     {% if user.is_super_admin %}
-        <div class="bg-white rounded-xl border border-brand-light p-6 max-w-md">
-            <h2 class="text-base font-bold text-slate-800 mb-4">إضافة معلّمة جديدة</h2>
-            {% if form.non_field_errors %}
-                <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
-                    {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+        <div id="addTeacherModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] {% if form.errors %}flex{% else %}hidden{% endif %} items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 bg-brand-bg border-b-2 border-brand-dark">
+                    <h2 class="text-base font-bold text-slate-800">إضافة معلّمة جديدة</h2>
+                    <button type="button" onclick="closeModal('addTeacherModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/60 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-            {% endif %}
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                {% for field in form %}
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
-                        {{ field }}
-                        {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endfor %}
-                <button type="submit" class="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-[#154d19] transition">إضافة</button>
-            </form>
+                <div class="p-6">
+                    {% if form.non_field_errors %}
+                        <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 px-4 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">إضافة</button>
+                            <button type="button" onclick="closeModal('addTeacherModal')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    </script>
 {% endblock %}

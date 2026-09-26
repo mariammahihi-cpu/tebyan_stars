@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة مديرة المدرسة - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-house text-brand-dark"></i> مرحبًا، {{ user.full_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stat-tile { background: #fff; border-radius: .75rem; border: 1px solid #A5D6A7; padding: 1.25rem; }
+    .stat-tile .stat-value { font-size: 1.75rem; font-weight: 800; color: #1B5E20; line-height: 1.2; }
+    .stat-tile .stat-label { font-size: .8rem; color: #64748b; margin-top: .25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+    <!-- ===== ملخص أسبوعي عام ===== -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="stat-tile">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="stat-value">{{ progress_percent }}٪</div>
+                    <div class="stat-label">نسبة إنجاز التقييم هذا الأسبوع</div>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-brand-bg text-brand-dark flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-400">{{ done_pairs }} من {{ total_pairs }} فصل/مادة على مستوى المدرسة</div>
+        </div>
+
+        <div class="stat-tile">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="stat-value">{{ students_evaluated_count }}</div>
+                    <div class="stat-label">طالب تم تقييمه هذا الأسبوع</div>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-brand-bg text-brand-dark flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-user-graduate"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-tile">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="stat-value" style="font-size: 1.25rem;">{% if week_start %}{{ week_start|date:"Y-m-d" }}{% else %}—{% endif %}</div>
+                    <div class="stat-label">تاريخ آخر تصفير أسبوعي</div>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-gold-dark/10 text-gold-dark flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-rotate"></i>
+                </div>
+            </div>
+            <div class="mt-3 text-xs text-slate-400">يُفعَّل التصفير القادم يدويًا من صفحة الإعدادات الأسبوعية</div>
+        </div>
+    </div>
+
+    <!-- ===== تنبيه: فصول بدون أي نشاط هذا الأسبوع ===== -->
+    {% if zero_activity_sections %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
+            <h2 class="font-bold text-red-800 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> فصول بدون أي تقييم هذا الأسبوع
+            </h2>
+            <p class="text-sm text-red-700/80 mb-4">{{ zero_activity_sections|length }} فصل لم يُسجَّل له أي تقييم بعد (لا مادة ولا إشراف)</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for section in zero_activity_sections %}
+                    <a href="{% url 'evaluations:apply_evaluation' %}?section={{ section.id }}"
+                       class="flex items-center gap-2 bg-white border border-red-200 rounded-lg p-3 hover:bg-red-50 transition text-sm font-semibold text-slate-700">
+                        <i class="fa-solid fa-circle-exclamation text-red-500"></i> {{ section }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-brand-bg border border-brand-light rounded-xl p-4 mb-6 text-brand-dark text-sm font-medium flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i> كل الفصول دخلها تقييم واحد على الأقل هذا الأسبوع
+        </div>
+    {% endif %}
+
+    <!-- ===== اختصارات سريعة ===== -->
+    <div>
+        <h2 class="font-bold text-slate-800 mb-3">اختصارات سريعة</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="{% url 'rules:manage_rules' %}" class="entity-card p-5 hover:-translate-y-0.5 transition block">
+                <i class="fa-solid fa-list-check entity-card-watermark text-brand-dark"></i>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 rounded-lg bg-brand-bg text-brand-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="font-bold text-slate-800">قواعد التقييم</div>
+                    <div class="text-xs text-slate-500 mt-1">تعديل معايير الإضافة والخصم</div>
+                </div>
+            </a>
+
+            <a href="{% url 'evaluations:weekly_settings' %}" class="entity-card entity-card-accent-gold p-5 hover:-translate-y-0.5 transition block">
+                <i class="fa-solid fa-rotate entity-card-watermark text-gold-dark"></i>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 rounded-lg bg-gold-dark/10 text-gold-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+                    <div class="font-bold text-slate-800">التصفير الأسبوعي</div>
+                    <div class="text-xs text-slate-500 mt-1">ضبط السقف الأسبوعي وتصفير الرصيد</div>
+                </div>
+            </a>
+
+            <a href="{% url 'accounts:data_entry_account_list' %}" class="entity-card entity-card-accent-medium p-5 hover:-translate-y-0.5 transition block">
+                <i class="fa-solid fa-user-check entity-card-watermark text-brand-dark"></i>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 rounded-lg bg-brand-bg text-brand-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <div class="font-bold text-slate-800">حسابات موظفات الإدخال</div>
+                    <div class="text-xs text-slate-500 mt-1">تفعيل وتعطيل الحسابات</div>
+                </div>
+            </a>
+
+            <a href="{% url 'evaluations:activity_log' %}" class="entity-card p-5 hover:-translate-y-0.5 transition block">
+                <i class="fa-solid fa-clock-rotate-left entity-card-watermark text-brand-dark"></i>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 rounded-lg bg-brand-bg text-brand-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="font-bold text-slate-800">سجل النشاط</div>
+                    <div class="text-xs text-slate-500 mt-1">مراجعة كل التقييمات المسجّلة</div>
+                </div>
+            </a>
+                        <a href="{% url 'reports:admin_report_filters' %}" class="entity-card entity-card-accent-gold p-5 hover:-translate-y-0.5 transition block">
+                <i class="fa-solid fa-file-lines entity-card-watermark text-gold-dark"></i>
+                <div class="relative z-10">
+                    <div class="w-10 h-10 rounded-lg bg-gold-dark/10 text-gold-dark flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-file-lines"></i>
+                    </div>
+                    <div class="font-bold text-slate-800">تقرير المديرة</div>
+                    <div class="text-xs text-slate-500 mt-1">تصدير PDF بفلترة حرة مع بيانات التدقيق</div>
+                </div>
+            </a>
+        </div>
+    </div>
+{% endblock %}

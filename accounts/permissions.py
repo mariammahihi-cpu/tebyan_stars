@@ -43,7 +43,7 @@ def required_role(*allowed_roles):
                 return view_func(request, *args, **kwargs)
 
             if request.user.role not in allowed_roles:
-                raise PermissionDenied("ما عندك صلاحية للوصول لهذي الصفحة")
+                raise PermissionDenied("لا تملكين صلاحية الوصول إلى هذه الصفحة")
 
             return view_func(request, *args, **kwargs)
 

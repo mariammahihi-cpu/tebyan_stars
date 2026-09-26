@@ -1,60 +1,181 @@
-<!-- evaluations/templates/evaluations/activity_log.html -->
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>سجل النشاط - نجوم التبيان</title>
-</head>
-<body>
-    <main class="log-page">
-        <h1>سجل النشاط</h1>
+{% extends "base.html" %}
 
-        <form method="get" class="inline-form">
-            <label for="staff">فلترة حسب موظفة الإدخال:</label>
-            <select name="staff" id="staff" onchange="this.form.submit()">
-                <option value="">الكل</option>
-                {% for staff in staff_list %}
-                    <option value="{{ staff.pk }}" {% if selected_staff_id == staff.pk|stringformat:"s" %}selected{% endif %}>
-                        {{ staff.full_name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </form>
+{% block title %}سجل النشاط - نجوم التبيان{% endblock %}
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>الطالب</th>
-                    <th>القاعدة</th>
-                    <th>المادة</th>
-                    <th>القيمة</th>
-                    <th>سجّلتها</th>
-                    <th>الوقت</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for evaluation in evaluations %}
-                    <tr>
-                        <td>{{ evaluation.student.full_name }}</td>
-                        <td>{{ evaluation.rule.name }}</td>
-                        <td>{% if evaluation.subject %}{{ evaluation.subject.name }}{% else %}—{% endif %}</td>
-                        <td>{% if evaluation.value > 0 %}+{% endif %}{{ evaluation.value }}</td>
-                        <td>{{ evaluation.recorded_by.full_name }}</td>
-                        <td>{{ evaluation.created_at|date:"Y-m-d H:i" }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="6">لا يوجد تقييمات مسجّلة بعد</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% block page_title %}
+    <i class="fa-solid fa-clock-rotate-left text-brand-dark"></i> سجل النشاط
+{% endblock %}
 
-        <p>
-            {% if user.is_super_admin %}
-                <a href="{% url 'accounts:super_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
-            {% else %}
-                <a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
+{% block content %}
+    {% if selected_student %}
+        <div class="mb-4 flex items-center justify-between bg-brand-bg border border-brand-light rounded-lg px-4 py-3">
+            <span class="text-sm font-semibold text-brand-dark">
+                <i class="fa-solid fa-filter ml-1"></i> مُصفّى حسب الطالب: {{ selected_student.full_name }}
+            </span>
+            <a href="{% url 'evaluations:activity_log' %}{% if selected_staff_id %}?staff={{ selected_staff_id }}{% endif %}"
+               class="text-xs font-semibold text-brand-dark hover:underline">
+                <i class="fa-solid fa-xmark ml-1"></i> إزالة التصفية
+            </a>
+        </div>
+    {% endif %}
+
+    {% if selected_teacher %}
+        <div class="mb-4 flex items-center justify-between bg-brand-bg border border-brand-light rounded-lg px-4 py-3">
+            <span class="text-sm font-semibold text-brand-dark">
+                <i class="fa-solid fa-filter ml-1"></i> مُصفّى حسب المعلّمة: {{ selected_teacher.full_name }} (تقييمات موادها بفصولها فقط)
+            </span>
+            <a href="{% url 'evaluations:activity_log' %}{% if selected_staff_id %}?staff={{ selected_staff_id }}{% endif %}"
+               class="text-xs font-semibold text-brand-dark hover:underline">
+                <i class="fa-solid fa-xmark ml-1"></i> إزالة التصفية
+            </a>
+        </div>
+    {% endif %}
+
+    <form method="get" class="mb-6 bg-white rounded-xl border border-brand-light p-4">
+        {% if selected_student %}<input type="hidden" name="student" value="{{ selected_student.pk }}">{% endif %}
+        {% if selected_teacher %}<input type="hidden" name="teacher" value="{{ selected_teacher.pk }}">{% endif %}
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[120px]">
+                <label for="grade" class="block text-xs font-semibold text-slate-500 mb-1.5">الصف</label>
+                <select name="grade" id="grade" class="app-input">
+                    <option value="">الكل</option>
+                    {% for grade in grade_list %}
+                        <option value="{{ grade.pk }}" {% if selected_grade_id == grade.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ grade }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[200px]">
+                <label for="section" class="block text-xs font-semibold text-slate-500 mb-1.5">الفصل</label>
+                <select name="section" id="section" class="app-input">
+                    <option value="">الكل</option>
+                    {% for section in section_list %}
+                        <option value="{{ section.pk }}" {% if selected_section_id == section.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ section }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[180px]">
+                <label for="subject" class="block text-xs font-semibold text-slate-500 mb-1.5">المادة</label>
+                <select name="subject" id="subject" class="app-input">
+                    <option value="">الكل</option>
+                    {% for subject in subject_list %}
+                        <option value="{{ subject.pk }}" {% if selected_subject_id == subject.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ subject.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[220px]">
+                <label for="rule" class="block text-xs font-semibold text-slate-500 mb-1.5">القاعدة</label>
+                <select name="rule" id="rule" class="app-input">
+                    <option value="">الكل</option>
+                    {% for rule in rules_list %}
+                        <option value="{{ rule.pk }}" {% if selected_rule_id == rule.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ rule.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[150px]">
+                <label for="type" class="block text-xs font-semibold text-slate-500 mb-1.5">نوع النشاط</label>
+                <select name="type" id="type" class="app-input">
+                    <option value="">الكل</option>
+                    <option value="add" {% if selected_type == "add" %}selected{% endif %}>إضافة</option>
+                    <option value="deduct" {% if selected_type == "deduct" %}selected{% endif %}>خصم</option>
+                    <option value="transfer" {% if selected_type == "transfer" %}selected{% endif %}>تحويل (تاجر التبيان)</option>
+                </select>
+            </div>
+            <div class="min-w-[200px]">
+                <label for="staff" class="block text-xs font-semibold text-slate-500 mb-1.5">موظفة الإدخال</label>
+                <select name="staff" id="staff" class="app-input">
+                    <option value="">الكل</option>
+                    {% for staff in staff_list %}
+                        <option value="{{ staff.pk }}" {% if selected_staff_id == staff.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ staff.full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[150px]">
+                <label for="date_from" class="block text-xs font-semibold text-slate-500 mb-1.5">من تاريخ</label>
+                <input type="text" name="date_from" id="date_from" value="{{ date_from }}" class="app-input"
+                       placeholder="مثال: 2026-01-15" pattern="\d{4}-\d{2}-\d{2}"
+                       title="بصيغة سنة-شهر-يوم، مثلًا 2026-01-15" dir="ltr" style="text-align: right;">
+            </div>
+            <div class="min-w-[150px]">
+                <label for="date_to" class="block text-xs font-semibold text-slate-500 mb-1.5">إلى تاريخ</label>
+                <input type="text" name="date_to" id="date_to" value="{{ date_to }}" class="app-input"
+                       placeholder="مثال: 2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                       title="بصيغة سنة-شهر-يوم، مثلًا 2026-01-31" dir="ltr" style="text-align: right;">
+            </div>
+            <button type="submit" class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap h-[42px]">
+                <i class="fa-solid fa-filter ml-1"></i> تصفية
+            </button>
+            {% if selected_grade_id or selected_section_id or selected_subject_id or selected_rule_id or selected_type or selected_staff_id or date_from or date_to %}
+                <a href="{% url 'evaluations:activity_log' %}{% if selected_student %}?student={{ selected_student.pk }}{% elif selected_teacher %}?teacher={{ selected_teacher.pk }}{% endif %}"
+                   class="px-5 py-2.5 border border-brand-light text-slate-600 text-sm font-semibold rounded-lg hover:bg-brand-bg transition whitespace-nowrap h-[42px] flex items-center">
+                    إعادة ضبط
+                </a>
             {% endif %}
-        </p>
-    </main>
-</body>
-</html>
+        </div>
+    </form>
+
+    <div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">الطالب</th>
+                        <th class="px-4 py-3 font-semibold">الفصل</th>
+                        <th class="px-4 py-3 font-semibold">القاعدة</th>
+                        <th class="px-4 py-3 font-semibold">المادة</th>
+                        <th class="px-4 py-3 font-semibold">القيمة</th>
+                        <th class="px-4 py-3 font-semibold">سجّلتها</th>
+                        <th class="px-4 py-3 font-semibold">الوقت</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-light">
+                    {% for item in activity_items %}
+                        {% if item.activity_kind == "transfer" %}
+                            <tr class="hover:bg-gold-light/10 transition bg-gold-light/5">
+                                <td colspan="7" class="px-4 py-3 text-slate-700">
+                                    <i class="fa-solid fa-right-left text-gold-dark ml-1"></i>
+                                    قامت <span class="font-semibold text-slate-800">{{ item.recorded_by.full_name }}</span>
+                                    بتحويل <span class="font-semibold text-brand-dark">{{ item.amount }}</span> نجمة
+                                    من <span class="font-semibold text-slate-800">{{ item.seller.full_name }}</span>
+                                    إلى <span class="font-semibold text-slate-800">{{ item.buyer.full_name }}</span>،
+                                    بتاريخ <span class="text-slate-500 text-xs" dir="ltr">{{ item.created_at|date:"Y-m-d H:i" }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr class="hover:bg-brand-bg/40 transition">
+                                <td class="px-4 py-3 font-medium text-slate-800">{{ item.student.full_name }}</td>
+                                <td class="px-4 py-3 text-slate-600">{{ item.student.section }}</td>
+                                <td class="px-4 py-3 text-slate-700">{{ item.rule.name }}</td>
+                                <td class="px-4 py-3 text-slate-600">{% if item.subject %}{{ item.subject.name }}{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if item.value > 0 %}bg-brand-medium/15 text-brand-dark border border-brand-medium/30{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                                        {% if item.value > 0 %}+{% endif %}{{ item.value }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-slate-600">{{ item.recorded_by.full_name }}</td>
+                                <td class="px-4 py-3 text-slate-500 text-xs" dir="ltr">{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                        {% endif %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center text-slate-400">
+                                <i class="fa-solid fa-inbox text-3xl mb-3 block"></i>
+                                {% if selected_student %}لا يوجد نشاط مسجّل لهذا الطالب.{% elif selected_teacher %}لا توجد تقييمات مسجّلة لمواد هذه المعلّمة بعد.{% else %}لا يوجد نشاط مطابق لعوامل التصفية.{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if activity_items %}<p class="text-slate-400 text-xs mt-3">آخر {{ activity_items|length }} عنصر نشاط (الأحدث أولاً)</p>{% endif %}
+{% endblock %}

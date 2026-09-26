@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}لوحة التحكم{% endblock %} - نجوم التبيان</title>
+    <title>{% block title %}لوحة التحكم - نجوم التبيان{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,22 +36,117 @@
     </script>
 
     <style>
+        :root { --color-primary-bg: #E8F5E9; }
+
         * { font-family: 'Tajawal', sans-serif; }
 
         .app-input {
             width: 100%;
-            background: #ffffff;
-            border: 1px solid #A5D6A7;
-            border-radius: 0.5rem;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 0.75rem;
             padding: 0.625rem 1rem;
             font-size: 0.875rem;
             color: #1e293b;
             outline: none;
-            transition: border-color .2s, box-shadow .2s;
+            transition: border-color .2s, box-shadow .2s, background-color .2s;
         }
         .app-input::placeholder { color: #94a3b8; }
-        .app-input:focus { border-color: #1B5E20; box-shadow: 0 0 0 3px rgba(27, 94, 32, .15); }
+        .app-input:focus {
+            background: #ffffff;
+            border-color: #1B5E20;
+            box-shadow: 0 0 0 3px rgba(102, 187, 106, .3);
+        }
         textarea.app-input { resize: none; }
+
+        /* حقول input[type="date"] عنصر تحكّم أصلي بالمتصفح — أجزاؤه الداخلية
+           (يوم/شهر/سنة) تنعكس بصريًا ببعض متصفحات ويندوز لما تكون داخل صفحة
+           RTL كاملة. نجبر اتجاهها الداخلي LTR (ترتيب الأجزاء صحيح دايمًا)
+           مع إبقاء محاذاتها يمين لتناسق بصري مع باقي حقول الفورم. */
+        input[type="date"].app-input {
+            direction: ltr;
+            text-align: right;
+        }
+
+        /* ============ نمط البطاقة المشترك (Entity Card) ============
+           مستخدم بكل صفحات القوائم (الصفوف، الفصول، المواد، المعلّمات،
+           قواعد التقييم) — استدارة كاملة بكل الزوايا وظل ناعم متدرّج هو
+           الوزن البصري الأساسي (مظهر "ناعم/حديث")، مع حد جانبي رفيع (3px)
+           مُبقى عليه فقط لأنه يحمل معنى فعلي: لون تصنيف العنصر (مادة/صف/
+           فصل) بالكلاسات accent-* تحت — لولاه يفقد نظام الألوان التصنيفي
+           معناه بكل الصفحات اللي تستخدمه.
+           أي تعديل هون ينعكس تلقائيًا بكل مكان يستخدم هالكلاسات. */
+        .entity-card {
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            border-radius: 1rem;
+            border-right: 3px solid #1B5E20;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            transition: box-shadow .2s ease, transform .2s ease;
+        }
+        .entity-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.10), 0 8px 12px -4px rgba(0, 0, 0, 0.05);
+        }
+        /* تمايز لوني اختياري لبطاقات الفئات (زي قواعد الإشراف العام) حيث اللون
+           يحمل معنى فعلي — بعكس بطاقات العناصر الفردية اللي صارت كلها بلون واحد ثابت */
+        .entity-card-accent-gold { border-right-color: #F9A825; }
+        .entity-card-accent-medium { border-right-color: #66BB6A; }
+
+        /* ألوان حد مطابقة تمامًا لألوان أيقونة كل مادة (نفس عائلة اللون
+           المستخدمة أصلاً بـ _SUBJECT_VISUALS بملف structure/views.py) —
+           عشان حد البطاقة ينسجم مع لون أيقونتها بدل ما يتعارض معه بلون
+           عشوائي غير مرتبط بهوية المادة. */
+        .entity-card-accent-blue { border-right-color: #2563EB; }
+        .entity-card-accent-indigo { border-right-color: #4F46E5; }
+        .entity-card-accent-emerald { border-right-color: #047857; }
+        .entity-card-accent-purple { border-right-color: #9333EA; }
+        .entity-card-accent-slate { border-right-color: #475569; }
+        .entity-card-accent-teal { border-right-color: #0D9488; }
+        .entity-card-accent-amber { border-right-color: #D97706; }
+        .entity-card-accent-pink { border-right-color: #DB2777; }
+        .entity-card-accent-orange { border-right-color: #EA580C; }
+        .entity-card-accent-rose { border-right-color: #E11D48; }
+
+        /* تناوب منتظم ومتوقع لحد البطاقات داخل شبكات العناصر المتكررة اللي
+           ما عندها هوية لونية خاصة بها (الصفوف، الفصول، المعلّمات): البطاقة
+           الفردية (الأولى، الثالثة، الخامسة...) أخضر غامق، والزوجية (الثانية،
+           الرابعة...) أخضر متوسط. مطبَّق عبر :nth-child مباشرة على حاوية
+           الشبكة (class="entity-card-grid") بدل منطق داخل قالب Django — فلا
+           يمكن أبدًا أن يختل الترتيب أو يظهر بلا حد ملوّن.
+           صفحة المواد مستثناة عمدًا من هذا التناوب (لا تحمل كلاس
+           entity-card-grid) لأن كل مادة عندها أصلاً لون أيقونة خاص بها
+           (entity-card-accent-*)، وحدها بيستخدم نفس اللون بدل ما يتعارض معه.
+           بطاقات الاختصارات والفئات غير المتكررة (قواعد التقييم، لوحة
+           المديرة) تبقى بلونها الثابت المقصود كما هي كذلك. */
+        .entity-card-grid > .entity-card:nth-child(odd) { border-right-color: #1B5E20; }
+        .entity-card-grid > .entity-card:nth-child(even) { border-right-color: #66BB6A; }
+
+        .entity-card-watermark {
+            position: absolute; top: -14px; left: -12px;
+            font-size: 72px; line-height: 1; opacity: .07;
+            transform: rotate(-15deg); pointer-events: none; z-index: 0;
+        }
+
+        /* دائرة أفاتار — تُستخدم بجانب اسم عنصر فردي يمثّل شخصًا (المعلّمات حاليًا) */
+        .entity-avatar-circle {
+            width: 52px; height: 52px; border-radius: 9999px; flex-shrink: 0;
+            background: #1B5E20; color: #FFD54F;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.25rem;
+        }
+
+        /* شارات صغيرة تعرض معلومة حقيقية موجودة أصلاً تحت اسم العنصر */
+        .entity-tag {
+            display: inline-flex; align-items: center;
+            font-size: .7rem; font-weight: 700;
+            border-radius: 9999px; padding: .2rem .65rem;
+            white-space: nowrap;
+        }
+        .entity-tag-subject { background: #E8F5E9; color: #1B5E20; }
+        .entity-tag-count { background: #FFF8E1; color: #B45309; }
+        .entity-tag-muted { background: #f1f5f9; color: #94a3b8; }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -60,126 +156,149 @@
 <div class="flex min-h-screen">
 
     <!-- ============ الشريط الجانبي ============ -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-l border-brand-light shrink-0 sticky top-0 h-screen overflow-y-auto">
-        <div class="h-16 flex items-center gap-3 px-6 border-b border-brand-light">
-            <div class="bg-brand-dark p-2 rounded-lg">
-                <i class="fa-solid fa-star text-gold-light"></i>
-            </div>
-            <span class="text-lg font-bold text-brand-dark">نجوم التبيان</span>
+    <aside class="hidden md:flex flex-col w-64 bg-[#144718] shadow-xl shrink-0 sticky top-0 h-screen overflow-y-auto">
+        <div class="h-16 flex items-center px-6 border-b border-white/10">
+            <span class="text-lg font-bold text-white">نجوم التبيان</span>
         </div>
 
         <nav class="flex-1 p-4 space-y-1 text-sm">
 
             {% if user.is_super_admin %}
                 <a href="{% url 'accounts:super_admin_dashboard' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'super_admin_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'super_admin_dashboard' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-house w-5"></i> الرئيسية
                 </a>
             {% elif user.is_school_admin %}
                 <a href="{% url 'accounts:school_admin_dashboard' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'school_admin_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'school_admin_dashboard' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-house w-5"></i> الرئيسية
                 </a>
             {% elif user.is_data_entry %}
                 <a href="{% url 'accounts:data_entry_dashboard' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'data_entry_dashboard' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'data_entry_dashboard' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-house w-5"></i> الرئيسية
+                </a>
+            {% endif %}
+
+            {% if not user.is_data_entry %}
+                <a href="{% url 'leaderboard:leaderboard' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if ns == 'leaderboard' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-trophy w-5"></i> لوحة الشرف
                 </a>
             {% endif %}
 
             {% if user.is_super_admin %}
                 <a href="{% url 'accounts:account_list' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'account_list' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'account_list' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-users-gear w-5"></i> إدارة الحسابات
                 </a>
             {% endif %}
             {% if user.is_school_admin %}
                 <a href="{% url 'accounts:data_entry_account_list' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'data_entry_account_list' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'data_entry_account_list' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-user-check w-5"></i> حسابات موظفات الإدخال
                 </a>
             {% endif %}
 
             {% if user.is_super_admin or user.is_school_admin %}
-                <div class="pt-3 mt-3 border-t border-brand-light text-xs font-bold text-slate-400 px-4">الهيكل التنظيمي</div>
+                <div class="pt-3 mt-3 border-t border-white/10 text-xs font-bold text-white/50 px-4">الهيكل التنظيمي</div>
 
-                <a href="{% url 'structure:grade_list' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'grade_list' or url_name == 'section_list' or url_name == 'classroom_roster' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                <a href="{% url 'structure:grade_list' %}" class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'grade_list' or url_name == 'section_list' or url_name == 'classroom_roster' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                   <i class="fa-solid fa-layer-group w-5"></i> الصفوف والطلاب
                 </a>
                 <a href="{% url 'structure:manage_subjects' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_subjects' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'manage_subjects' or url_name == 'subject_detail' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-book w-5"></i> المواد
                 </a>
                 <a href="{% url 'structure:manage_teachers' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_teachers' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'manage_teachers' or url_name == 'teacher_detail' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-chalkboard-user w-5"></i> المعلّمات
                 </a>
-                <a href="{% url 'structure:manage_section_subjects' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_section_subjects' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
-                    <i class="fa-solid fa-diagram-project w-5"></i> تدريس المواد للفصول
-                </a>
 
-                <div class="pt-3 mt-3 border-t border-brand-light text-xs font-bold text-slate-400 px-4">التقييم</div>
+                <div class="pt-3 mt-3 border-t border-white/10 text-xs font-bold text-white/50 px-4">التقييم</div>
 
-            
                 <a href="{% url 'rules:manage_rules' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'manage_rules' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'manage_rules' or url_name == 'rule_list' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-list-check w-5"></i> قواعد التقييم
                 </a>
+                <a href="{% url 'evaluations:weekly_settings' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'weekly_settings' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-sliders w-5"></i> الإعدادات الأسبوعية
+                </a>
                 <a href="{% url 'evaluations:activity_log' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'activity_log' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'activity_log' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-clock-rotate-left w-5"></i> سجل النشاط
                 </a>
-                <a href="{% url 'evaluations:weekly_settings' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'weekly_settings' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
-                    <i class="fa-solid fa-sliders w-5"></i> الإعدادات الأسبوعية
+                <a href="{% url 'analytics:dashboard' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if ns == 'analytics' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-chart-line w-5"></i> لوحة التحليلات
+                </a>
+                <a href="{% url 'reports:admin_report_filters' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if ns == 'reports' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-file-pdf w-5"></i> التقارير
                 </a>
             {% endif %}
 
             {% if user.is_data_entry %}
+                <div class="pt-3 mt-3 border-t border-white/10 text-xs font-bold text-white/50 px-4">التقييم</div>
+
                 <a href="{% url 'evaluations:apply_evaluation' %}"
-                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition {% if url_name == 'apply_evaluation' %}bg-brand-dark/10 text-brand-dark border border-brand-medium/40{% else %}text-slate-600 hover:bg-brand-bg{% endif %}">
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'apply_evaluation' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
                     <i class="fa-solid fa-star w-5"></i> تطبيق تقييم
+                </a>
+                <a href="{% url 'evaluations:pos_manage' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'pos_manage' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-store w-5"></i> تاجر التبيان
+                </a>
+                <a href="{% url 'leaderboard:leaderboard' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if ns == 'leaderboard' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-trophy w-5"></i> لوحة الشرف
+                </a>
+
+                <div class="pt-3 mt-3 border-t border-white/10 text-xs font-bold text-white/50 px-4">التقارير</div>
+
+                <a href="{% url 'reports:parent_report_picker' %}"
+                   class="flex items-center gap-3 px-5 py-2.5 rounded-xl font-medium transition {% if url_name == 'parent_report_picker' %}bg-white text-brand-dark font-bold shadow-sm{% else %}text-white/80 hover:bg-white/10 hover:text-white{% endif %}">
+                    <i class="fa-solid fa-file-pdf w-5"></i> تقرير ولي الأمر
                 </a>
             {% endif %}
         </nav>
-
-        <div class="p-4 border-t border-brand-light">
-            <form method="post" action="{% url 'accounts:logout' %}"
-                  data-confirm-title="تسجيل الخروج"
-                  data-confirm="هل أنتِ متأكدة من تسجيل الخروج من النظام؟"
-                  data-confirm-tone="warning">
-                {% csrf_token %}
-                <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition text-sm font-medium">
-                    <i class="fa-solid fa-right-from-bracket w-5"></i> تسجيل الخروج
-                </button>
-            </form>
-        </div>
     </aside>
 
     <!-- ============ منطقة المحتوى ============ -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <header class="h-16 bg-white border-b border-brand-light flex items-center justify-between px-6 sticky top-0 z-30">
-            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <header class="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-30 transition-all">
+            <h1 class="page-title-bar text-xl font-bold text-slate-800 flex items-center gap-2">
                 {% block page_title %}{% endblock %}
             </h1>
             <div class="flex items-center gap-4">
                 {% block header_actions %}{% endblock %}
 
-                <div class="flex items-center gap-3 pr-4 border-r border-brand-light">
+                <div class="flex items-center gap-3 pr-4 border-r border-slate-200">
                     <div class="text-right leading-tight hidden sm:block">
                         <div class="text-sm font-semibold text-slate-800">{{ user.full_name }}</div>
                         <div class="text-xs text-slate-500">{{ user.get_role_display }}</div>
                     </div>
-                    <div class="w-9 h-9 rounded-full bg-brand-dark/10 border border-brand-medium/40 text-brand-dark flex items-center justify-center font-bold">
+                    <div class="w-9 h-9 rounded-full bg-[#144718] text-white flex items-center justify-center font-bold">
                         {{ user.full_name|first|upper }}
                     </div>
                 </div>
+
+                <form method="post" action="{% url 'accounts:logout' %}"
+                      data-confirm-title="تسجيل الخروج"
+                      data-confirm="هل أنتِ متأكدة من تسجيل الخروج من النظام؟"
+                      data-confirm-tone="warning">
+                    {% csrf_token %}
+                    <button type="submit" title="تسجيل الخروج"
+                           class="w-9 h-9 rounded-full flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </form>
             </div>
         </header>
 
-        <main class="flex-1 p-6">
+        <main class="flex-1 p-8" style="background: #F8FAFC;">
 
             {% if messages %}{% for m in messages %}
                 <div class="mb-4 px-4 py-3 rounded-lg border text-sm
@@ -204,8 +323,8 @@
         <h3 id="confirmModalTitle" class="text-lg font-bold text-slate-800 mb-2"></h3>
         <p id="confirmModalMessage" class="text-slate-500 text-sm mb-6"></p>
         <div class="flex gap-3">
-            <button id="confirmModalConfirmBtn" type="button" class="flex-1 px-4 py-2.5 rounded-lg font-semibold text-white transition"></button>
-            <button id="confirmModalCancelBtn" type="button" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+            <button id="confirmModalConfirmBtn" type="button" class="flex-1 px-4 py-2.5 rounded-xl font-semibold text-white shadow-sm hover:shadow-md transition"></button>
+            <button id="confirmModalCancelBtn" type="button" class="flex-1 px-4 py-2.5 rounded-xl font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-sm hover:shadow-md transition">إلغاء</button>
         </div>
     </div>
 </div>
@@ -236,7 +355,7 @@
                 titleEl.textContent = title || 'تأكيد العملية';
                 messageEl.textContent = message || '';
                 confirmBtn.textContent = confirmText || 'تأكيد';
-                confirmBtn.className = 'flex-1 px-4 py-2.5 rounded-lg font-semibold text-white transition ' + t.btn;
+                confirmBtn.className = 'flex-1 px-4 py-2.5 rounded-xl font-semibold text-white shadow-sm hover:shadow-md transition ' + t.btn;
 
                 overlay.classList.remove('hidden');
                 overlay.classList.add('flex');
@@ -277,6 +396,43 @@
 
             if (ok) form.submit();
         });
+
+        /* إظهار/إخفاء ديناميكي للحقول الشرطية — أي فورم فيه مفتاح "قيمة متغيّرة
+           (مدى)" (id_is_range) مع حقول "قيمة ثابتة" (id_value) و"مدى" (id_min_value
+           / id_max_value)، تُظهر واحدة وتُخفي الأخرى حسب حالة المفتاح. تلقائي على
+           أي صفحة فيها هذي المعرّفات الثلاثة دفعة وحدة (فورمات قواعد التقييم كلها:
+           مادة/إشراف/استبدال، إضافة وتعديل) — بدون أي كود خاص بأي فورم بعينه. */
+        const isRangeToggle = document.getElementById('id_is_range');
+        const valueField = document.getElementById('id_value');
+        const minField = document.getElementById('id_min_value');
+        const maxField = document.getElementById('id_max_value');
+        if (isRangeToggle && valueField && minField && maxField) {
+            const valueWrap = valueField.closest('div');
+            const minWrap = minField.closest('div');
+            const maxWrap = maxField.closest('div');
+            const sync = function () {
+                const isRange = isRangeToggle.checked;
+                valueWrap.classList.toggle('hidden', isRange);
+                minWrap.classList.toggle('hidden', !isRange);
+                maxWrap.classList.toggle('hidden', !isRange);
+            };
+            isRangeToggle.addEventListener('change', sync);
+            sync();
+        }
+
+        /* نفس المبدأ لحقل "الصفوف" — معناه فقط لتصنيف "استبدال"، فيُخفى
+           تلقائيًا لأي تصنيف آخر. ينطبق فقط على الفورم الكامل (Super Admin)
+           اللي فيه حقلي "التصنيف" و"الصفوف" معًا بنفس الصفحة. */
+        const categoryField = document.getElementById('id_category');
+        const gradesField = document.getElementById('id_grades');
+        if (categoryField && gradesField) {
+            const gradesWrap = gradesField.parentElement;
+            const syncGrades = function () {
+                gradesWrap.classList.toggle('hidden', categoryField.value !== 'redemption');
+            };
+            categoryField.addEventListener('change', syncGrades);
+            syncGrades();
+        }
     })();
 </script>
 

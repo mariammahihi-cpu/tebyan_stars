@@ -1,37 +1,39 @@
-<!-- rules/templates/rules/edit_rule.html -->
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>تعديل قاعدة - نجوم التبيان</title>
-</head>
-<body>
-    <main class="edit-page">
-        <h1>تعديل: {{ object }}</h1>
+{% extends "base.html" %}
 
-        {% if not user.is_super_admin %}
-            <p><em>صلاحيتك تسمح بتعديل القيمة بس — باقي تفاصيل القاعدة محصورة بمسؤولة النظام.</em></p>
-        {% endif %}
+{% block title %}تعديل قاعدة - نجوم التبيان{% endblock %}
 
-        {% if form.non_field_errors %}
-            <div class="form-errors">
-                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-            </div>
-        {% endif %}
+{% block page_title %}
+    <button type="button" onclick="history.back()" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع">
+        <i class="fa-solid fa-arrow-right"></i>
+    </button>
+    <i class="fa-solid fa-pen-to-square text-brand-dark"></i> تعديل: {{ object }}
+{% endblock %}
 
-        <form method="post">
-            {% csrf_token %}
-            {% for field in form %}
-                <div class="form-field">
-                    {{ field.label_tag }}
-                    {{ field }}
-                    {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+{% block content %}
+    <div class="bg-white rounded-xl border border-brand-light max-w-md overflow-hidden">
+        <div class="px-6 py-4 bg-brand-bg border-b-2 border-brand-dark">
+            <h2 class="text-base font-bold text-slate-800">تعديل القاعدة</h2>
+        </div>
+        <div class="p-6">
+            {% if not user.is_super_admin %}
+                <p class="text-xs text-slate-500 mb-4">صلاحيتك تسمح بتعديل القيمة فقط — باقي تفاصيل القاعدة محصورة بمسؤولة النظام.</p>
+            {% endif %}
+            {% if form.non_field_errors %}
+                <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                    {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
                 </div>
-            {% endfor %}
-            <button type="submit">حفظ التعديل</button>
-        </form>
-
-        <p><a href="{% url 'rules:manage_rules' %}">رجوع لقائمة القواعد</a></p>
-    </main>
-</body>
-</html>
+            {% endif %}
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-[#154d19] transition">حفظ التعديل</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

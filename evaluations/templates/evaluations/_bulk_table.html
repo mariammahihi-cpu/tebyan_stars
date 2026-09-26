@@ -1,0 +1,57 @@
+<div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-center">
+            <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                <tr>
+                    <th class="px-3 py-3 sticky right-0 bg-brand-bg">
+                        <input type="checkbox" id="select-all-rows" class="row-checkbox">
+                    </th>
+                    <th class="px-4 py-3 font-semibold text-right sticky right-9 bg-brand-bg whitespace-nowrap">الطالب</th>
+                    {% for rule in rules %}
+                                                <th class="px-3 py-3 font-semibold whitespace-nowrap {% if rule.divider_before %}group-divider{% endif %}"
+                            title="{{ rule.name }}"
+                            data-rule-id="{{ rule.id }}"
+                            data-rule-name="{{ rule.name }}"
+                            data-deduct="{% if rule.is_deduction %}1{% else %}0{% endif %}"
+                            data-range="{% if rule.is_range %}1{% else %}0{% endif %}"
+                            data-values="{% for n in rule.range_values %}{{ n }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                            data-fixed-value="{{ rule.value|default_if_none:'' }}">
+                            {{ rule.name }}
+                        </th>
+                    {% endfor %}
+                    <th class="px-4 py-3 font-semibold whitespace-nowrap">الرصيد</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-brand-light">
+                {% for row in rows %}
+                    <tr class="hover:bg-brand-bg/30 transition">
+                        <td class="px-3 py-3 sticky right-0 bg-white">
+                            <input type="checkbox" class="row-checkbox" data-student-checkbox data-student="{{ row.student.id }}">
+                        </td>
+                        <td class="px-4 py-3 text-slate-800 font-medium text-right whitespace-nowrap sticky right-9 bg-white">{{ row.student.full_name }}</td>
+                        {% for cell in row.cells %}
+                            <td class="px-2 py-2 {% if cell.divider_before %}group-divider{% endif %}">
+                                <div class="flex items-center justify-center gap-1" data-cell-group="{{ row.student.id }}-{{ cell.rule.id }}" data-range="{% if cell.rule.is_range %}1{% else %}0{% endif %}">
+                                    {% if cell.rule.is_range %}
+                                        {% for n in cell.rule.range_values %}
+                                            <button type="button" data-cell-btn data-student="{{ row.student.id }}" data-rule="{{ cell.rule.id }}" data-value="{{ n }}"
+                                                    class="cell-btn {% if n < 0 %}deduct{% endif %} {% if cell.value == n %}active{% endif %}">{{ n }}</button>
+                                        {% endfor %}
+                                    {% else %}
+                                        <button type="button" data-cell-btn data-student="{{ row.student.id }}" data-rule="{{ cell.rule.id }}" data-value=""
+                                                class="toggle-icon-btn {% if cell.rule.is_deduction %}deduct{% endif %} {% if cell.value is not None %}active{% endif %}">
+                                            <i class="fa-solid {% if cell.rule.is_deduction %}fa-minus{% else %}fa-check{% endif %} text-xs"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        {% endfor %}
+                        <td class="px-4 py-3 font-bold text-slate-800" data-balance="{{ row.student.id }}">{{ row.balance }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="{{ rules|length|add:3 }}" class="px-4 py-12 text-slate-400">لا يوجد طلاب بهذا الفصل</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

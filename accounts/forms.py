@@ -107,7 +107,7 @@ class CreateAccountForm(forms.Form):
     def clean_username(self):
         username = self.cleaned_data["username"]
         if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("اسم المستخدم هذا مستخدم من قبل، اختاري اسم تاني")
+            raise forms.ValidationError("اسم المستخدم هذا مستخدم من قبل، اختاري اسم آخر")
         return username
 
     def clean_password2(self):

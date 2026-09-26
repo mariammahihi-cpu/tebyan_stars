@@ -7,13 +7,16 @@
 {% endblock %}
 
 {% block content %}
-    <form method="get" class="mb-6 flex gap-3">
-        <div class="relative flex-1 max-w-sm">
-            <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 right-4 text-slate-400"></i>
-            <input type="text" name="q" value="{{ search }}" placeholder="بحث بالاسم أو اسم المستخدم..."
-                   class="app-input pr-11">
+    <form method="get" class="mb-6 flex items-end gap-3">
+        <div class="flex-1 max-w-sm">
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">البحث</label>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 right-4 text-slate-400"></i>
+                <input type="text" name="q" value="{{ search }}" placeholder="بحث بالاسم أو اسم المستخدم..."
+                       class="app-input pr-11">
+            </div>
         </div>
-        <button class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap">
+        <button class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap h-[42px]">
             <i class="fa-solid fa-magnifying-glass ml-1"></i> بحث
         </button>
     </form>
@@ -55,12 +58,13 @@
                             <td class="px-4 py-3 text-center">
                                 <form method="post" action="{% url 'accounts:toggle_account_active' account.pk %}" class="inline"
                                    data-confirm-title="{% if account.is_active %}تعطيل الحساب{% else %}تفعيل الحساب{% endif %}"
-                                   data-confirm="{% if account.is_active %}هل أنتِ متأكدة من تعطيل حساب {{ account.full_name }}؟ لن تقدر تسجّل دخول لحد ما تفعّليه من جديد.{% else %}هل تحبين تفعيل حساب {{ account.full_name }}؟{% endif %}"
+                                   data-confirm="{% if account.is_active %}هل أنتِ متأكدة من تعطيل حساب {{ account.full_name }}؟ لن تستطيع تسجيل الدخول حتى يتم تفعيل الحساب من جديد..{% else %}هل تحبين تفعيل حساب {{ account.full_name }}؟{% endif %}"
                                    data-confirm-tone="{% if account.is_active %}warning{% else %}default{% endif %}">
                                    {% csrf_token %}
                                   <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition {% if account.is_active %}bg-red-600 hover:bg-red-700{% else %}bg-brand-medium hover:bg-[#57a75b]{% endif %}">
                                     {% if account.is_active %}تعطيل{% else %}تفعيل{% endif %}
                                   </button>
+                                </form>
                             </td>
                         </tr>
                     {% empty %}

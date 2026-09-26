@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تاجر التبيان - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <i class="fa-solid fa-store text-brand-dark"></i> تاجر التبيان
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .search-wrap { position: relative; }
+    .search-suggestions {
+        position: absolute; top: calc(100% + 4px); right: 0; left: 0; z-index: 40;
+        background: #fff; border: 1px solid #E2E8F0; border-radius: 0.75rem;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.12);
+        max-height: 220px; overflow-y: auto;
+    }
+    .search-suggestion-item {
+        padding: 0.6rem 1rem; font-size: 0.875rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    }
+    .search-suggestion-item:hover, .search-suggestion-item.highlighted { background: #E8F5E9; }
+    .search-suggestion-empty { padding: 0.75rem 1rem; font-size: 0.8rem; color: #94a3b8; text-align: center; }
+    .search-chosen-badge {
+        display: none; align-items: center; gap: 0.4rem; margin-top: 0.5rem;
+        background: #E8F5E9; color: #1B5E20; font-weight: 700; font-size: 0.8rem;
+        border-radius: 0.6rem; padding: 0.4rem 0.7rem;
+    }
+    .search-chosen-badge.show { display: inline-flex; }
+    .search-chosen-badge button { color: #b91c1c; font-weight: 800; line-height: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+    {{ sections_data|json_script:"sections-data" }}
+    {{ students_data|json_script:"students-data" }}
+
+    <div class="mb-6 px-4 py-3 rounded-lg border bg-amber-50 border-amber-300 text-amber-800 text-sm font-medium flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+        <span>تحويل الرصيد يُخصم من رصيد الطرف المُحوِّل التراكمي ويُضاف لرصيد الطرف المستلِم مباشرة — لا يمكن التراجع عن هذي العملية.</span>
+    </div>
+
+    <!-- ===== فورم التحويل — شريط أفقي عريض أعلى الصفحة ===== -->
+    <div class="bg-white rounded-xl border border-brand-light p-6 mb-6">
+        <h2 class="font-bold text-slate-800 mb-1">تحويل رصيد بين طرفين</h2>
+        <p class="text-sm text-slate-500 mb-5">اختاري الصف ثم الفصل، بعدها ابحثي عن الطرفين بالاسم من طلاب الفصل نفسه.</p>
+
+        {% if form.non_field_errors %}
+            <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" id="pos-form">
+            {% csrf_token %}
+            {{ form.buyer }}
+            {{ form.seller }}
+
+            <div class="flex flex-wrap items-start gap-4">
+                <div class="w-full sm:w-36">
+                    <label for="grade-select" class="block text-xs font-semibold text-slate-500 mb-1">الصف</label>
+                    <select id="grade-select" class="app-input">
+                        <option value="">اختاري الصف...</option>
+                        {% for grade in grades %}
+                            <option value="{{ grade.id }}">{{ grade }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="w-full sm:w-48">
+                    <label for="section-select" class="block text-xs font-semibold text-slate-500 mb-1">الفصل</label>
+                    <select id="section-select" class="app-input" disabled>
+                        <option value="">اختاري الصف أولاً...</option>
+                    </select>
+                </div>
+
+                <div class="w-full sm:flex-1 sm:min-w-[220px]">
+                    <label for="seller-search" class="block text-xs font-semibold text-slate-500 mb-1">
+                        من — الطرف المُحوِّل
+                    </label>
+                    <div class="search-wrap">
+                        <input type="text" id="seller-search" class="app-input" autocomplete="off" disabled
+                               placeholder="اختاري الفصل أولاً...">
+                        <div id="seller-suggestions" class="search-suggestions hidden"></div>
+                    </div>
+                    <span id="seller-chosen" class="search-chosen-badge">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="seller-chosen-name"></span>
+                        <button type="button" id="seller-clear" aria-label="إلغاء الاختيار">×</button>
+                    </span>
+                    {% for error in form.seller.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="hidden sm:flex items-end justify-center text-brand-dark text-lg pb-2.5">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </div>
+
+                <div class="w-full sm:flex-1 sm:min-w-[220px]">
+                    <label for="buyer-search" class="block text-xs font-semibold text-slate-500 mb-1">
+                        إلى — الطرف المستلِم
+                    </label>
+                    <div class="search-wrap">
+                        <input type="text" id="buyer-search" class="app-input" autocomplete="off" disabled
+                               placeholder="اختاري الفصل أولاً...">
+                        <div id="buyer-suggestions" class="search-suggestions hidden"></div>
+                    </div>
+                    <span id="buyer-chosen" class="search-chosen-badge">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="buyer-chosen-name"></span>
+                        <button type="button" id="buyer-clear" aria-label="إلغاء الاختيار">×</button>
+                    </span>
+                    {% for error in form.buyer.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="w-full sm:w-28">
+                    <label for="{{ form.amount.id_for_label }}" class="block text-xs font-semibold text-slate-500 mb-1">
+                        {{ form.amount.label }}
+                    </label>
+                    {{ form.amount }}
+                    {% for error in form.amount.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="w-full sm:w-auto">
+                    <label class="block text-xs font-semibold text-transparent mb-1 select-none">تنفيذ</label>
+                    <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap">
+                        <i class="fa-solid fa-right-left ml-1"></i> تنفيذ التحويل
+                    </button>
+                </div>
+            </div>
+            <p id="pos-form-hint" class="text-red-600 text-xs mt-3 hidden"></p>
+        </form>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+        <!-- ===== آخر عمليات التحويل ===== -->
+        <div>
+            <div class="bg-white rounded-xl border border-brand-light p-6">
+                <h2 class="font-bold text-slate-800 mb-4">آخر عمليات التحويل</h2>
+                {% if transactions %}
+                    <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-slate-500 sticky top-0 bg-white">
+                                <tr>
+                                    <th class="text-right px-2 py-1.5 font-semibold">من</th>
+                                    <th class="text-right px-2 py-1.5 font-semibold">إلى</th>
+                                    <th class="text-left px-2 py-1.5 font-semibold">المبلغ</th>
+                                    <th class="text-left px-2 py-1.5 font-semibold">الوقت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in transactions %}
+                                    <tr class="border-t border-slate-100">
+                                        <td class="px-2 py-1.5 text-slate-700">{{ tx.seller.full_name }}</td>
+                                        <td class="px-2 py-1.5 text-slate-700">{{ tx.buyer.full_name }}</td>
+                                        <td class="px-2 py-1.5 text-left font-bold text-brand-dark whitespace-nowrap">
+                                            <i class="fa-solid fa-star text-gold-dark text-xs ml-1"></i>{{ tx.amount }}
+                                        </td>
+                                        <td class="px-2 py-1.5 text-left text-slate-400 text-xs whitespace-nowrap">{{ tx.created_at|date:"Y-m-d H:i" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-slate-400 py-4 text-center">لا توجد عمليات تحويل بعد</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ===== أرصدة طلاب الفصل المختار (تظهر فقط بعد اختيار الفصل) ===== -->
+        <div>
+            <div id="section-balances-card" class="bg-white rounded-xl border border-brand-light p-6 hidden">
+                <h2 class="font-bold text-slate-800 mb-4">أرصدة طلاب الفصل (مرجع سريع)</h2>
+                <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-xs text-slate-500 sticky top-0 bg-white">
+                            <tr>
+                                <th class="text-right px-2 py-1.5 font-semibold">الاسم</th>
+                                <th class="text-left px-2 py-1.5 font-semibold">الرصيد التراكمي</th>
+                            </tr>
+                        </thead>
+                        <tbody id="section-balances-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="section-balances-placeholder" class="bg-white rounded-xl border border-dashed border-slate-200 p-6 text-center text-slate-400 text-sm">
+                أرصدة طلاب الفصل تظهر هنا بعد اختيار الصف والفصل
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const sectionsData = JSON.parse(document.getElementById('sections-data').textContent);
+    const studentsData = JSON.parse(document.getElementById('students-data').textContent);
+
+    const gradeSelect = document.getElementById('grade-select');
+    const sectionSelect = document.getElementById('section-select');
+    const balancesCard = document.getElementById('section-balances-card');
+    const balancesPlaceholder = document.getElementById('section-balances-placeholder');
+    const balancesBody = document.getElementById('section-balances-body');
+    const formHint = document.getElementById('pos-form-hint');
+    const posForm = document.getElementById('pos-form');
+
+    function showBalancesCard(show) {
+        balancesCard.classList.toggle('hidden', !show);
+        balancesPlaceholder.classList.toggle('hidden', show);
+    }
+
+    function clearSelect(el, placeholder) {
+        el.innerHTML = '';
+        el.add(new Option(placeholder, ''));
+    }
+
+    function renderSectionBalances(sectionId) {
+        balancesBody.innerHTML = '';
+        const rows = studentsData.filter(function (s) { return String(s.section_id) === String(sectionId); });
+        if (!rows.length) {
+            balancesBody.innerHTML = '<tr><td colspan="2" class="text-slate-400 text-center py-4">لا يوجد طلاب نشطون بهذا الفصل</td></tr>';
+        } else {
+            rows.forEach(function (s) {
+                const tr = document.createElement('tr');
+                tr.className = 'border-t border-slate-100';
+                tr.innerHTML = '<td class="px-2 py-1.5 text-slate-700"></td><td class="px-2 py-1.5 text-left font-bold text-brand-dark"><i class="fa-solid fa-star text-gold-dark text-xs ml-1"></i></td>';
+                tr.children[0].textContent = s.name;
+                tr.children[1].appendChild(document.createTextNode(s.balance));
+                balancesBody.appendChild(tr);
+            });
+        }
+        showBalancesCard(true);
+    }
+
+    gradeSelect.addEventListener('change', function () {
+        resetParty('seller');
+        resetParty('buyer');
+        showBalancesCard(false);
+
+        if (!gradeSelect.value) {
+            sectionSelect.disabled = true;
+            clearSelect(sectionSelect, 'اختاري الصف أولاً...');
+            return;
+        }
+        clearSelect(sectionSelect, 'اختاري الفصل...');
+        sectionsData
+            .filter(function (s) { return String(s.grade_id) === String(gradeSelect.value); })
+            .forEach(function (s) { sectionSelect.add(new Option(s.label, s.id)); });
+        sectionSelect.disabled = false;
+    });
+
+    sectionSelect.addEventListener('change', function () {
+        resetParty('seller');
+        resetParty('buyer');
+
+        const active = !!sectionSelect.value;
+        [sellerSearch, buyerSearch].forEach(function (input) {
+            input.disabled = !active;
+            input.placeholder = active ? 'اكتبي حرفين من الاسم على الأقل...' : 'اختاري الفصل أولاً...';
+        });
+
+        if (active) {
+            renderSectionBalances(sectionSelect.value);
+        } else {
+            showBalancesCard(false);
+        }
+    });
+
+    // ===== حقول البحث المباشر (autocomplete) لطرفَي التحويل =====
+    function setupSearch(prefix, hiddenField) {
+        const input = document.getElementById(prefix + '-search');
+        const suggestionsBox = document.getElementById(prefix + '-suggestions');
+        const chosenBadge = document.getElementById(prefix + '-chosen');
+        const chosenName = document.getElementById(prefix + '-chosen-name');
+        const clearBtn = document.getElementById(prefix + '-clear');
+
+        function hideSuggestions() {
+            suggestionsBox.classList.add('hidden');
+            suggestionsBox.innerHTML = '';
+        }
+
+        function choose(student) {
+            hiddenField.value = student.id;
+            chosenName.textContent = student.name;
+            chosenBadge.classList.add('show');
+            input.value = '';
+            input.classList.add('hidden');
+            hideSuggestions();
+        }
+
+        function reset() {
+            hiddenField.value = '';
+            chosenBadge.classList.remove('show');
+            input.value = '';
+            input.classList.remove('hidden');
+            hideSuggestions();
+        }
+
+        input.addEventListener('input', function () {
+            hiddenField.value = '';
+            const query = input.value.trim();
+            if (!sectionSelect.value || query.length < 2) { hideSuggestions(); return; }
+
+            const matches = studentsData.filter(function (s) {
+                return String(s.section_id) === String(sectionSelect.value) &&
+                    s.name.indexOf(query) !== -1;
+            }).slice(0, 8);
+
+            suggestionsBox.innerHTML = '';
+            if (!matches.length) {
+                const empty = document.createElement('div');
+                empty.className = 'search-suggestion-empty';
+                empty.textContent = 'لا يوجد طالب مطابق بهذا الاسم بالفصل المختار';
+                suggestionsBox.appendChild(empty);
+            } else {
+                matches.forEach(function (s) {
+                    const item = document.createElement('div');
+                    item.className = 'search-suggestion-item';
+                    item.textContent = s.name;
+                    item.addEventListener('click', function () { choose(s); });
+                    suggestionsBox.appendChild(item);
+                });
+            }
+            suggestionsBox.classList.remove('hidden');
+        });
+
+        input.addEventListener('focus', function () {
+            if (input.value.trim().length >= 2) input.dispatchEvent(new Event('input'));
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!suggestionsBox.contains(e.target) && e.target !== input) hideSuggestions();
+        });
+
+        clearBtn.addEventListener('click', reset);
+
+        return { reset: reset };
+    }
+
+    const sellerHidden = document.getElementById('{{ form.seller.id_for_label }}');
+    const buyerHidden = document.getElementById('{{ form.buyer.id_for_label }}');
+    const sellerSearch = document.getElementById('seller-search');
+    const buyerSearch = document.getElementById('buyer-search');
+
+    const controllers = {
+        seller: setupSearch('seller', sellerHidden),
+        buyer: setupSearch('buyer', buyerHidden),
+    };
+
+    function resetParty(which) { controllers[which].reset(); }
+
+    posForm.addEventListener('submit', function (e) {
+        formHint.classList.add('hidden');
+        if (!sellerHidden.value || !buyerHidden.value) {
+            e.preventDefault();
+            formHint.textContent = 'يجب اختيار طرفَي التحويل من نتائج البحث قبل التنفيذ';
+            formHint.classList.remove('hidden');
+        }
+    });
+})();
+</script>
+{% endblock %}

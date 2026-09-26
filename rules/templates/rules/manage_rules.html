@@ -1,80 +1,64 @@
-<!-- rules/templates/rules/manage_rules.html -->
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>قواعد التقييم - نجوم التبيان</title>
-</head>
-<body>
-    <main class="manage-page">
-        <h1>قواعد التقييم</h1>
+{% extends "base.html" %}
 
-        {% if messages %}
-            <ul class="messages">
-                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
-            </ul>
-        {% endif %}
+{% block title %}قواعد التقييم - نجوم التبيان{% endblock %}
 
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>اسم القاعدة</th>
-                    <th>التصنيف</th>
-                    <th>المادة</th>
-                    <th>القيمة</th>
-                    <th>إجراء</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for rule in rules %}
-                    <tr>
-                        <td>{{ rule.name }}</td>
-                        <td>{{ rule.get_category_display }}</td>
-                        <td>{% if rule.subject %}{{ rule.subject.name }}{% else %}كل المواد{% endif %}</td>
-                        <td>{% if rule.value > 0 %}+{% endif %}{{ rule.value }}</td>
-                        <td>
-                            <a href="{% url 'rules:edit_rule' rule.pk %}">تعديل</a>
-                            {% if user.is_super_admin %}
-                                <form method="post" action="{% url 'rules:delete_rule' rule.pk %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" onclick="return confirm('متأكدة من حذف هذه القاعدة؟');">حذف</button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5">لا يوجد قواعد بعد</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+{% block page_title %}
+    <i class="fa-solid fa-list-check text-brand-dark"></i> قواعد التقييم
+{% endblock %}
 
-        {% if user.is_super_admin %}
-            <h2>إضافة قاعدة جديدة</h2>
-            {% if form.non_field_errors %}
-                <div class="form-errors">
-                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-                </div>
-            {% endif %}
-            <form method="post" class="inline-form">
-                {% csrf_token %}
-                {% for field in form %}
-                    <div class="form-field">
-                        {{ field.label_tag }}
-                        {{ field }}
-                        {% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endfor %}
-                <button type="submit">إضافة</button>
-            </form>
-        {% endif %}
+{% block content %}
+    <!-- ===== ملخص إحصائي سريع ===== -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 max-w-2xl">
+        <div class="bg-white rounded-xl border border-brand-light p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-brand-bg text-brand-dark flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-slate-800">{{ add_count }}</div>
+                <div class="text-xs text-slate-500">قواعد إضافة</div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-brand-light p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-minus"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-slate-800">{{ deduct_count }}</div>
+                <div class="text-xs text-slate-500">قواعد خصم</div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gold-dark/30 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gold-dark/10 text-gold-dark flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-star"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-slate-800">{{ total_count }}</div>
+                <div class="text-xs text-slate-500">إجمالي القواعد</div>
+            </div>
+        </div>
+    </div>
 
-        <p>
-            {% if user.is_super_admin %}
-                <a href="{% url 'accounts:super_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
-            {% else %}
-                <a href="{% url 'accounts:school_admin_dashboard' %}">رجوع للوحة الرئيسية</a>
-            {% endif %}
-        </p>
-    </main>
-</body>
-</html>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl">
+        <a href="{% url 'rules:rule_list' 'subject' %}" class="entity-card p-6 hover:-translate-y-0.5 transition block">
+            <i class="fa-solid fa-book entity-card-watermark text-brand-dark"></i>
+            <div class="relative z-10">
+                <div class="text-lg font-bold text-slate-800 mb-1">قواعد المواد الدراسية</div>
+                <div class="text-sm text-slate-500">قواعد التقييم المرتبطة بمادة دراسية محددة، أو بكل المواد</div>
+            </div>
+        </a>
+        <a href="{% url 'rules:rule_list' 'general' %}" class="entity-card entity-card-accent-gold p-6 hover:-translate-y-0.5 transition block">
+            <i class="fa-solid fa-shield-halved entity-card-watermark text-gold-dark"></i>
+            <div class="relative z-10">
+                <div class="text-lg font-bold text-slate-800 mb-1">قواعد الإشراف العامة</div>
+                <div class="text-sm text-slate-500">قواعد السلوك العام، غير المرتبطة بأي مادة دراسية</div>
+            </div>
+        </a>
+        <a href="{% url 'rules:rule_list' 'redemption' %}" class="entity-card entity-card-accent-rose p-6 hover:-translate-y-0.5 transition block">
+            <i class="fa-solid fa-right-left entity-card-watermark text-red-600"></i>
+            <div class="relative z-10">
+                <div class="text-lg font-bold text-slate-800 mb-1">قواعد الاستبدال</div>
+                <div class="text-sm text-slate-500">خصم فقط — عامة لكل الصفوف، أو مرتبطة بصفوف محددة</div>
+            </div>
+        </a>
+    </div>
+{% endblock %}

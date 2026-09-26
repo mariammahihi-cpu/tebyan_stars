@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+    @font-face {
+        font-family: 'Tajawal';
+        src: url('{{ font_uri }}');
+    }
+    @page {
+        size: A4;
+        margin: 2cm 1.5cm;
+        @bottom-center {
+            content: "صفحة " counter(page) " من " counter(pages);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 9px;
+            color: #64748b;
+        }
+    }
+    * { font-family: 'Tajawal', sans-serif; box-sizing: border-box; }
+    body { margin: 0; color: #1e293b; font-size: 12px; direction: rtl; }
+
+    .report-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #1B5E20;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+    .report-header .brand { display: flex; align-items: center; gap: 10px; }
+    .report-header .brand img { width: 52px; height: 52px; }
+    .report-header .brand-name { font-size: 16px; font-weight: 700; color: #1B5E20; }
+    .report-header .report-meta { text-align: left; font-size: 10px; color: #64748b; }
+
+    .report-title { font-size: 20px; font-weight: 800; color: #1B5E20; margin: 0 0 4px; }
+    .report-subtitle { font-size: 11px; color: #64748b; margin: 0 0 20px; }
+
+    .info-grid {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .info-card {
+        flex: 1;
+        border: 1px solid #A5D6A7;
+        border-radius: 6px;
+        padding: 10px 14px;
+        background: #E8F5E9;
+    }
+    .info-card .info-label { font-size: 9px; color: #64748b; margin-bottom: 3px; }
+    .info-card .info-value { font-size: 14px; font-weight: 700; color: #1B5E20; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    thead th {
+        background: #1B5E20; color: #fff; font-weight: 700;
+        padding: 8px 6px; text-align: right;
+    }
+    tbody td { padding: 6px; border-bottom: 1px solid #E8F5E9; }
+    tbody tr:nth-child(even) { background: #F7FAF6; }
+    .value-add { color: #1B5E20; font-weight: 700; }
+    .value-deduct { color: #B91C1C; font-weight: 700; }
+
+    .empty-note { text-align: center; color: #94a3b8; padding: 24px; font-size: 11px; }
+
+    {% block extra_style %}{% endblock %}
+</style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="brand">
+            {% if logo_uri %}<img src="{{ logo_uri }}" alt="شعار المدرسة">{% endif %}
+            <span class="brand-name">نجوم التبيان</span>
+        </div>
+        <div class="report-meta">تاريخ الإصدار: {{ issued_at|date:"Y-m-d" }}</div>
+    </div>
+
+    <h1 class="report-title">{% block report_title %}{% endblock %}</h1>
+    <p class="report-subtitle">{% block report_subtitle %}{% endblock %}</p>
+
+    {% block report_content %}{% endblock %}
+</body>
+</html>

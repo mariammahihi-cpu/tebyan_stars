@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <a href="{% url 'structure:manage_subjects' %}" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع للمواد">
+        <i class="fa-solid fa-arrow-right"></i>
+    </a>
+    <i class="fa-solid fa-book text-brand-dark"></i> {{ subject.name }}
+{% endblock %}
+
+{% block header_actions %}
+    {% if user.is_super_admin %}
+        <button type="button" onclick="openModal('addAssignmentModal')" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+            <i class="fa-solid fa-plus"></i> ربط جديد
+        </button>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="mb-6 flex flex-wrap gap-2">
+        {% for grade in subject.grades.all %}
+            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-brand-dark/10 text-brand-dark border border-brand-medium/30">{{ grade }}</span>
+        {% empty %}
+            <p class="text-slate-400 text-sm">هذه المادة غير مرتبطة بأي صف حتى الآن.</p>
+        {% endfor %}
+    </div>
+
+    <div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">الفصل</th>
+                        <th class="px-4 py-3 font-semibold">المعلّمة</th>
+                        {% if user.is_super_admin %}<th class="px-4 py-3 font-semibold text-center">إجراء</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-light">
+                    {% for assignment in assignments %}
+                        <tr class="hover:bg-brand-bg/40 transition">
+                            <td class="px-4 py-3 text-slate-800 font-medium">{{ assignment.section }}</td>
+                            <td class="px-4 py-3 text-slate-600">
+                                <a href="{% url 'structure:teacher_detail' assignment.teacher.pk %}" class="hover:text-brand-dark hover:underline">{{ assignment.teacher }}</a>
+                            </td>
+                            {% if user.is_super_admin %}
+                                <td class="px-4 py-3 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <a href="{% url 'structure:edit_section_subject' assignment.pk %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-dark/10 text-brand-dark hover:bg-brand-dark/20 transition">تعديل</a>
+                                        <form method="post" action="{% url 'structure:delete_section_subject' assignment.pk %}"
+                                              data-confirm-title="حذف الربط"
+                                              data-confirm="هل أنتِ متأكدة من حذف ربط {{ assignment.section }} بمعلّمة {{ assignment.teacher }}؟"
+                                              data-confirm-tone="danger">
+                                            {% csrf_token %}
+                                            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition">حذف</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="px-4 py-12 text-center text-slate-400">لا يوجد ربط بعد لهذه المادة</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if user.is_super_admin %}
+        <div id="addAssignmentModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] {% if form.errors %}flex{% else %}hidden{% endif %} items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 bg-brand-bg border-b-2 border-brand-dark">
+                    <h2 class="text-base font-bold text-slate-800">ربط فصل بمعلّمة لمادة {{ subject.name }}</h2>
+                    <button type="button" onclick="closeModal('addAssignmentModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/60 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    {% if form.non_field_errors %}
+                        <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 px-4 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">حفظ</button>
+                            <button type="button" onclick="closeModal('addAssignmentModal')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    </script>
+{% endblock %}

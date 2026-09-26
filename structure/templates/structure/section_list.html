@@ -9,14 +9,20 @@
     <i class="fa-solid fa-chalkboard text-brand-dark"></i> فصول {{ grade }}
 {% endblock %}
 
+{% block header_actions %}
+    {% if user.is_super_admin %}
+        <button type="button" onclick="openModal('addSectionModal')" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+            <i class="fa-solid fa-plus"></i> فصل جديد
+        </button>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+    <div class="entity-card-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
         {% for section in sections %}
-            <div class="bg-white rounded-xl border border-brand-light p-5 hover:shadow-md hover:-translate-y-0.5 transition relative group">
-                <a href="{% url 'students:classroom_roster' section.id %}" class="block">
-                    <div class="w-11 h-11 rounded-lg bg-brand-dark/10 text-brand-dark flex items-center justify-center mb-3">
-                        <i class="fa-solid fa-chalkboard"></i>
-                    </div>
+            <div class="entity-card p-5 hover:-translate-y-0.5 transition group">
+                <i class="fa-solid fa-chalkboard entity-card-watermark text-brand-dark"></i>
+                <a href="{% url 'students:classroom_roster' section.id %}" class="relative z-10 block">
                     <div class="text-lg font-bold text-slate-800">{{ section.name }}</div>
                     <div class="text-xs text-slate-500 mt-1">{{ section.get_gender_display }}</div>
                     <div class="text-xs text-slate-500 mt-1 flex items-center gap-1">
@@ -24,7 +30,7 @@
                     </div>
                 </a>
                 {% if user.is_super_admin %}
-                    <div class="absolute top-3 left-3 hidden group-hover:flex gap-1">
+                    <div class="absolute top-3 left-3 hidden group-hover:flex gap-1 z-20">
                         <a href="{% url 'structure:edit_section' section.pk %}" class="w-7 h-7 rounded-lg bg-white border border-brand-light flex items-center justify-center text-brand-dark hover:bg-brand-bg transition" title="تعديل">
                             <i class="fa-solid fa-pen text-xs"></i>
                         </a>
@@ -46,24 +52,51 @@
     </div>
 
     {% if user.is_super_admin %}
-        <div class="bg-white rounded-xl border border-brand-light p-6 max-w-sm">
-            <h2 class="text-base font-bold text-slate-800 mb-4">إضافة فصل جديد لـ{{ grade }}</h2>
-            {% if form.non_field_errors %}
-                <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
-                    {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+        <div id="addSectionModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] {% if form.errors %}flex{% else %}hidden{% endif %} items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 bg-brand-bg border-b-2 border-brand-dark">
+                    <h2 class="text-base font-bold text-slate-800">إضافة فصل جديد لـ{{ grade }}</h2>
+                    <button type="button" onclick="closeModal('addSectionModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/60 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
-            {% endif %}
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                {% for field in form %}
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
-                        {{ field }}
-                        {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endfor %}
-                <button type="submit" class="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-[#154d19] transition">إضافة</button>
-            </form>
+                <div class="p-6">
+                    {% if form.non_field_errors %}
+                        <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 px-4 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">إضافة</button>
+                            <button type="button" onclick="closeModal('addSectionModal')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    </script>
 {% endblock %}

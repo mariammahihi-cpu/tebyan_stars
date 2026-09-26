@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة مسؤولة النظام - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-house text-brand-dark"></i> لوحة مسؤولة النظام{% endblock %}
+
+{% block content %}
+    <!-- ============ الملخص الإحصائي السريع ============ -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+        <div class="entity-card p-5">
+            <i class="fa-solid fa-user-graduate entity-card-watermark text-brand-dark"></i>
+            <div class="relative z-10 flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-extrabold text-brand-dark" style="font-variant-numeric: tabular-nums;">{{ students_count }}</div>
+                    <div class="text-xs text-slate-500 mt-1">إجمالي عدد الطلاب</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entity-card entity-card-accent-gold p-5">
+            <i class="fa-solid fa-chalkboard-user entity-card-watermark text-gold-dark"></i>
+            <div class="relative z-10 flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-extrabold text-gold-dark" style="font-variant-numeric: tabular-nums;">{{ teachers_count }}</div>
+                    <div class="text-xs text-slate-500 mt-1">إجمالي عدد المعلّمات</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entity-card p-5">
+            <i class="fa-solid fa-layer-group entity-card-watermark text-brand-dark"></i>
+            <div class="relative z-10 flex items-center justify-between">
+                <div>
+                    <div class="text-3xl font-extrabold text-brand-dark" style="font-variant-numeric: tabular-nums;">{{ sections_count }}</div>
+                    <div class="text-xs text-slate-500 mt-1">إجمالي عدد الفصول</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entity-card entity-card-accent-gold p-5">
+            <i class="fa-solid fa-star entity-card-watermark text-gold-dark"></i>
+            <div class="relative z-10">
+                <div class="text-3xl font-extrabold {% if weekly_net < 0 %}text-amber-700{% else %}text-brand-dark{% endif %}" style="font-variant-numeric: tabular-nums;">
+                    {{ weekly_net }}
+                </div>
+                <div class="text-xs text-slate-500 mt-1 mb-2.5">صافي نجوم الأسبوع الحالي</div>
+                <div class="flex items-center gap-3 text-xs pt-2 border-t border-slate-100">
+                    <span class="flex items-center gap-1 font-bold text-brand-dark" style="font-variant-numeric: tabular-nums;">
+                        <i class="fa-solid fa-arrow-up text-[10px]"></i> {{ weekly_add }} إضافة
+                    </span>
+                    <span class="flex items-center gap-1 font-bold text-amber-700" style="font-variant-numeric: tabular-nums;">
+                        <i class="fa-solid fa-arrow-down text-[10px]"></i> {{ weekly_deduct }} خصم
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ لوحة تحليلات المدرسة الكاملة ============ -->
+    {% include "analytics/_dashboard_content.html" %}
+{% endblock %}

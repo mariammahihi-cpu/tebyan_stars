@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ teacher.full_name }} - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <a href="{% url 'structure:manage_teachers' %}" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع للمعلّمات">
+        <i class="fa-solid fa-arrow-right"></i>
+    </a>
+    <i class="fa-solid fa-chalkboard-user text-brand-dark"></i> {{ teacher.full_name }}
+{% endblock %}
+
+{% block header_actions %}
+    <a href="{% url 'reports:teacher_report' teacher.id %}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+        <i class="fa-solid fa-file-pdf"></i> تصدير تقرير المعلّمة
+    </a>
+    <a href="{% url 'evaluations:activity_log' %}?teacher={{ teacher.id }}"
+       class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+        <i class="fa-solid fa-clock-rotate-left"></i> سجل نشاط موادها
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">المادة</th>
+                        <th class="px-4 py-3 font-semibold">الفصل</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-light">
+                    {% for assignment in assignments %}
+                        <tr class="hover:bg-brand-bg/40 transition">
+                            <td class="px-4 py-3 text-slate-800 font-medium">
+                                <a href="{% url 'structure:subject_detail' assignment.subject.pk %}" class="hover:text-brand-dark hover:underline">{{ assignment.subject }}</a>
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">{{ assignment.section }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="px-4 py-12 text-center text-slate-400">لا يوجد تدريس مسجّل لهذه المعلّمة بعد</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

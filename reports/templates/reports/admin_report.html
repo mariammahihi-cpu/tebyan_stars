@@ -1,0 +1,86 @@
+{% extends "reports/_base_pdf.html" %}
+
+{% block report_title %}تقرير المديرة{% endblock %}
+{% block report_subtitle %}تقرير تدقيقي شامل — يشمل وقت التسجيل الدقيق وهوية موظفة الإدخال{% endblock %}
+
+{% block extra_style %}
+    .filter-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .filter-badge {
+        background: #FFF8E1; border: 1px solid #FCD34D; color: #92400E;
+        border-radius: 999px; padding: 4px 12px; font-size: 10px; font-weight: 700;
+    }
+    .section-heading {
+        font-size: 13px; font-weight: 800; color: #1B5E20;
+        margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #A5D6A7;
+    }
+{% endblock %}
+
+{% block report_content %}
+    <div class="filter-badges">
+        {% for label in filters_display %}
+            <span class="filter-badge">{{ label }}</span>
+        {% endfor %}
+    </div>
+
+    <h2 class="section-heading">ملخص الرصيد لكل طالب</h2>
+    {% if summary_rows %}
+        <table>
+            <thead>
+                <tr>
+                    <th>الطالب</th>
+                    <th>الفصل</th>
+                    <th>الرصيد الأسبوعي</th>
+                    <th>الرصيد التراكمي</th>
+                    <th>اتجاه الأداء</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in summary_rows %}
+                    <tr>
+                        <td>{{ row.student.full_name }}</td>
+                        <td>{{ row.student.section }}</td>
+                        <td>{{ row.weekly }}</td>
+                        <td>{{ row.cumulative }}</td>
+                        <td style="color: {{ row.trend.color }};">{{ row.trend.icon }} {{ row.trend.label }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-note">لا يوجد طلاب مطابقون لهذه الفلترة.</p>
+    {% endif %}
+
+    <h2 class="section-heading">سجل التقييمات التفصيلي (تدقيقي)</h2>
+    {% if entries %}
+        <table>
+            <thead>
+                <tr>
+                    <th>الطالب</th>
+                    <th>الفصل</th>
+                    <th>المادة</th>
+                    <th>القاعدة</th>
+                    <th>القيمة</th>
+                    <th>التاريخ والوقت</th>
+                    <th>أدخلتها</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td>{{ entry.student.full_name }}</td>
+                        <td>{{ entry.student.section }}</td>
+                        <td>{{ entry.subject.name|default:"إشراف عام" }}</td>
+                        <td>{{ entry.rule.name }}</td>
+                        <td class="{% if entry.value > 0 %}value-add{% else %}value-deduct{% endif %}">
+                            {% if entry.value > 0 %}+{% endif %}{{ entry.value }}
+                        </td>
+                        <td>{{ entry.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ entry.recorded_by.full_name }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="empty-note">لا توجد أي تقييمات مطابقة لهذه الفلترة.</p>
+    {% endif %}
+{% endblock %}

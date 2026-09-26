@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}لوحة الشرف - نجوم التبيان{% endblock %}
+{% block page_title %}<i class="fa-solid fa-trophy text-gold-dark"></i> لوحة الشرف{% endblock %}
+
+{% block extra_head %}
+<style>
+    .lb-tab-btn {
+        padding: 0.55rem 1.25rem; border-radius: 0.75rem; font-weight: 700; font-size: 0.875rem;
+        transition: background-color .15s, color .15s;
+    }
+    .lb-tab-btn.active { background: #1B5E20; color: #fff; }
+    .lb-tab-btn:not(.active) { background: #F1F5F9; color: #475569; }
+    .lb-tab-btn:not(.active):hover { background: #E2E8F0; }
+
+    .lb-row { display: flex; align-items: center; gap: .75rem; padding: .6rem .75rem; border-radius: .65rem; }
+    .lb-row:nth-child(odd) { background: #F8FAFC; }
+    .lb-rank-badge {
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        width: 28px; height: 28px; border-radius: 9999px; font-weight: 800; font-size: .8rem;
+        background: #E2E8F0; color: #475569;
+    }
+    .lb-row[data-rank="1"] .lb-rank-badge { background: #F9A825; color: #fff; }
+    .lb-row[data-rank="2"] .lb-rank-badge { background: #FFD54F; color: #7c5800; }
+    .lb-row[data-rank="3"] .lb-rank-badge { background: #FFECB3; color: #92400e; }
+    .lb-name { flex: 1; font-size: .875rem; font-weight: 600; color: #1e293b; }
+    .lb-value { font-weight: 800; font-size: .9rem; font-variant-numeric: tabular-nums; }
+    .lb-value.positive { color: #1B5E20; }
+    .lb-value.negative { color: #B45309; }
+</style>
+{% endblock %}
+
+{% block content %}
+    {{ sections_data|json_script:"sections-data" }}
+
+    <!-- ============ اختيار الفصل ============ -->
+    <div class="bg-white rounded-xl border border-brand-light p-6 mb-6">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <div class="w-full sm:w-40">
+                <label for="grade-select" class="block text-xs font-semibold text-slate-500 mb-1">الصف</label>
+                <select id="grade-select" class="app-input">
+                    <option value="">اختاري الصف...</option>
+                    {% for grade in grades %}
+                        <option value="{{ grade.id }}" {% if selected_grade_id == grade.id|stringformat:"s" %}selected{% endif %}>{{ grade }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full sm:w-56">
+                <label for="section-select" class="block text-xs font-semibold text-slate-500 mb-1">الفصل</label>
+                <select id="section-select" name="section" class="app-input" {% if not selected_grade_id %}disabled{% endif %}>
+                    <option value="">{% if selected_grade_id %}اختاري الفصل...{% else %}اختاري الصف أولاً...{% endif %}</option>
+                </select>
+            </div>
+            <noscript><button type="submit" class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg">عرض</button></noscript>
+        </form>
+    </div>
+
+    {% if not section %}
+        <div class="bg-white rounded-xl border border-dashed border-slate-200 p-10 text-center text-slate-400">
+            اختاري الصف والفصل أعلاه لعرض لوحة الشرف
+        </div>
+    {% else %}
+        <!-- ============ شريط التحكم: تبويبات + عدد الطلاب + تصدير ============ -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+            <div class="flex items-center gap-2">
+                <button type="button" class="lb-tab-btn active" data-tab-btn="weekly">
+                    <i class="fa-solid fa-calendar-week ml-1"></i> الرصيد الأسبوعي
+                </button>
+                <button type="button" class="lb-tab-btn" data-tab-btn="cumulative">
+                    <i class="fa-solid fa-star ml-1"></i> الرصيد التراكمي
+                </button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <label for="top-n-select" class="text-xs font-semibold text-slate-500 whitespace-nowrap">عدد الطلاب المعروضين</label>
+                    <select id="top-n-select" class="app-input" style="width: auto;">
+                        <option value="3">أعلى 3</option>
+                        <option value="5">أعلى 5</option>
+                        <option value="10">أعلى 10</option>
+                        <option value="all">كل الفصل</option>
+                    </select>
+                </div>
+                <a id="pdf-export-link" href="{% url 'leaderboard:leaderboard_pdf' %}?section={{ section.id }}&top=3" target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-gold-dark text-white text-sm font-semibold rounded-lg hover:bg-[#e0940f] transition whitespace-nowrap">
+                    <i class="fa-solid fa-file-pdf"></i> تصدير PDF
+                </a>
+            </div>
+        </div>
+
+        <!-- ============ تبويب: الرصيد الأسبوعي ============ -->
+        <div data-tab-panel="weekly" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-brand-light p-6">
+                <h2 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-book text-brand-dark ml-1"></i> الأداء الأكاديمي</h2>
+                <div data-lb-list>
+                    {% for row in leaderboard.weekly_academic %}
+                        <div class="lb-row" data-lb-row data-rank="{{ forloop.counter }}">
+                            <span class="lb-rank-badge">{{ forloop.counter }}</span>
+                            <span class="lb-name">{{ row.student.full_name }}</span>
+                            <span class="lb-value {% if row.value < 0 %}negative{% else %}positive{% endif %}">{{ row.value }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-slate-400 text-sm text-center py-6">لا يوجد طلاب نشطون بهذا الفصل</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-brand-light p-6">
+                <h2 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-shield-heart text-brand-dark ml-1"></i> السلوك والإشراف</h2>
+                <div data-lb-list>
+                    {% for row in leaderboard.weekly_behavior %}
+                        <div class="lb-row" data-lb-row data-rank="{{ forloop.counter }}">
+                            <span class="lb-rank-badge">{{ forloop.counter }}</span>
+                            <span class="lb-name">{{ row.student.full_name }}</span>
+                            <span class="lb-value {% if row.value < 0 %}negative{% else %}positive{% endif %}">{{ row.value }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-slate-400 text-sm text-center py-6">لا يوجد طلاب نشطون بهذا الفصل</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ تبويب: الرصيد التراكمي ============ -->
+        <div data-tab-panel="cumulative" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+            <div class="bg-white rounded-xl border border-brand-light p-6">
+                <h2 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-book text-brand-dark ml-1"></i> الأداء الأكاديمي</h2>
+                <div data-lb-list>
+                    {% for row in leaderboard.cumulative_academic %}
+                        <div class="lb-row" data-lb-row data-rank="{{ forloop.counter }}">
+                            <span class="lb-rank-badge">{{ forloop.counter }}</span>
+                            <span class="lb-name">{{ row.student.full_name }}</span>
+                            <span class="lb-value {% if row.value < 0 %}negative{% else %}positive{% endif %}">{{ row.value }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-slate-400 text-sm text-center py-6">لا يوجد طلاب نشطون بهذا الفصل</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-brand-light p-6">
+                <h2 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-shield-heart text-brand-dark ml-1"></i> السلوك والإشراف</h2>
+                <div data-lb-list>
+                    {% for row in leaderboard.cumulative_behavior %}
+                        <div class="lb-row" data-lb-row data-rank="{{ forloop.counter }}">
+                            <span class="lb-rank-badge">{{ forloop.counter }}</span>
+                            <span class="lb-name">{{ row.student.full_name }}</span>
+                            <span class="lb-value {% if row.value < 0 %}negative{% else %}positive{% endif %}">{{ row.value }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-slate-400 text-sm text-center py-6">لا يوجد طلاب نشطون بهذا الفصل</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const sectionsData = JSON.parse(document.getElementById('sections-data').textContent);
+    const gradeSelect = document.getElementById('grade-select');
+    const sectionSelect = document.getElementById('section-select');
+    const selectedSectionId = "{{ selected_section_id }}";
+
+    function clearSelect(el, placeholder) {
+        el.innerHTML = '';
+        el.add(new Option(placeholder, ''));
+    }
+
+    function populateSections(gradeId, preselectId) {
+        if (!gradeId) {
+            sectionSelect.disabled = true;
+            clearSelect(sectionSelect, 'اختاري الصف أولاً...');
+            return;
+        }
+        clearSelect(sectionSelect, 'اختاري الفصل...');
+        sectionsData
+            .filter(function (s) { return String(s.grade_id) === String(gradeId); })
+            .forEach(function (s) {
+                const opt = new Option(s.label, s.id);
+                if (preselectId && String(s.id) === String(preselectId)) opt.selected = true;
+                sectionSelect.add(opt);
+            });
+        sectionSelect.disabled = false;
+    }
+
+    populateSections(gradeSelect.value, selectedSectionId);
+
+    gradeSelect.addEventListener('change', function () {
+        populateSections(gradeSelect.value, null);
+    });
+
+    sectionSelect.addEventListener('change', function () {
+        if (sectionSelect.value) sectionSelect.form.submit();
+    });
+
+    {% if section %}
+    // ===== تبديل التبويبات (أسبوعي/تراكمي) — فوري بدون إعادة تحميل =====
+    const tabButtons = document.querySelectorAll('[data-tab-btn]');
+    const tabPanels = document.querySelectorAll('[data-tab-panel]');
+
+    tabButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const target = btn.getAttribute('data-tab-btn');
+            tabButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+            tabPanels.forEach(function (p) {
+                p.classList.toggle('hidden', p.getAttribute('data-tab-panel') !== target);
+            });
+        });
+    });
+
+    // ===== عدد الطلاب المعروضين (Top N) — فوري على كل القوائم الأربع =====
+    const topNSelect = document.getElementById('top-n-select');
+    const pdfLink = document.getElementById('pdf-export-link');
+    const sectionId = "{{ section.id|default:'' }}";
+
+    function applyTopN(value) {
+        // نستخدم style.display مباشرة بدل كلاس hidden — كلاس .lb-row الخاص
+        // فيه display:flex معرّف بستايل الصفحة، وترتيب تحميل Tailwind
+        // (CDN ديناميكي) مو مضمون دايمًا يجي بعده بالـcascade، فممكن
+        // .hidden ما تغلب عليه. inline style أقوى من أي ستايل شيت دايمًا.
+        document.querySelectorAll('[data-lb-row]').forEach(function (row) {
+            const rank = parseInt(row.getAttribute('data-rank'), 10);
+            const show = value === 'all' || rank <= parseInt(value, 10);
+            row.style.display = show ? '' : 'none';
+        });
+        pdfLink.href = "{% url 'leaderboard:leaderboard_pdf' %}?section=" + sectionId + "&top=" + value;
+    }
+
+    topNSelect.addEventListener('change', function () {
+        applyTopN(topNSelect.value);
+    });
+
+    applyTopN(topNSelect.value);
+    {% endif %}
+})();
+</script>
+{% endblock %}

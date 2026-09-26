@@ -1,207 +1,475 @@
-<!-- evaluations/templates/evaluations/apply_evaluation.html -->
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>تطبيق تقييم - نجوم التبيان</title>
-</head>
-<body>
-    <main class="apply-page">
-        <h1>تطبيق تقييم على طالب</h1>
+{% extends "base.html" %}
 
-        {% if messages %}
-            <ul class="messages">
-                {% for message in messages %}<li>{{ message }}</li>{% endfor %}
-            </ul>
-        {% endif %}
+{% block title %}تطبيق تقييم - نجوم التبيان{% endblock %}
 
-        {% if form.non_field_errors %}
-            <div class="form-errors">
-                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-            </div>
-        {% endif %}
+{% block page_title %}
+    <i class="fa-solid fa-star text-brand-dark"></i> تطبيق تقييم
+{% endblock %}
 
-        {{ subjects_data|json_script:"subjects-data" }}
-        {{ rules_data|json_script:"rules-data" }}
-        {{ students_data|json_script:"students-data" }}
+{% block extra_head %}
+<style>
+    .cat-btn {
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 10px 18px; border-radius: 10px; border: 2px solid #A5D6A7;
+        background: #fff; color: #334155; font-weight: 600; font-size: 14px;
+        transition: all .15s ease; cursor: pointer; white-space: nowrap;
+    }
+    .cat-btn:hover { background: #E8F5E9; }
+    .cat-btn.active { border-color: #1B5E20; background: #1B5E20; color: #fff; }
 
-        <form method="post" id="evaluation-form">
-            {% csrf_token %}
+    .group-divider { border-right: 3px solid #cbd5e1; }
 
-            <div class="form-field">
-                <label for="category-filter">نوع التقييم</label>
-                <select id="category-filter">
-                    <option value="subject">مادة دراسية</option>
-                    <option value="general">إشراف عام</option>
-                </select>
-            </div>
+    .cell-btn {
+        width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid #A5D6A7;
+        background: #fff; font-size: 12px; font-weight: 700; color: #64748b;
+        transition: all .12s ease; cursor: pointer;
+    }
+    .cell-btn:hover { background: #E8F5E9; }
+    .cell-btn.active { border-color: #1B5E20; background: #1B5E20; color: #fff; }
+    .cell-btn.deduct.active { border-color: #b91c1c; background: #b91c1c; }
 
-            <div class="form-field" id="subject-field-wrapper">
-                {{ form.subject.label_tag }}
-                {{ form.subject }}
-                {% for error in form.subject.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-            </div>
+    .toggle-icon-btn {
+        width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid #A5D6A7;
+        background: #fff; color: #94a3b8; transition: all .12s ease; cursor: pointer;
+    }
+    .toggle-icon-btn:hover { background: #E8F5E9; }
+    .toggle-icon-btn.active { border-color: #1B5E20; background: #1B5E20; color: #fff; }
+    .toggle-icon-btn.deduct.active { border-color: #b91c1c; background: #b91c1c; }
 
-            <div class="form-field">
-                {{ form.rule.label_tag }}
-                {{ form.rule }}
-                {% for error in form.rule.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-            </div>
+    @keyframes flash-save { 0% { background: #E8F5E9; } 100% { background: transparent; } }
+    .flash-save { animation: flash-save .6s ease; }
 
-            <hr>
+    #toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+        background: #1B5E20; color: #fff; padding: 10px 16px 10px 22px; border-radius: 10px;
+        font-size: 14px; font-weight: 600; opacity: 0; transition: all .25s ease; z-index: 200;
+        pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.15);
+        display: flex; align-items: center; gap: 14px;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #toast.error { background: #b91c1c; }
+    #toast .undo-btn {
+        background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4);
+        color: #fff; border-radius: 8px; padding: 4px 12px; font-size: 13px; font-weight: 700;
+        cursor: pointer; white-space: nowrap;
+    }
+    #toast .undo-btn:hover { background: rgba(255,255,255,.3); }
 
-            <div class="form-field">
-                <label for="grade-filter">فلترة حسب الصف (اختياري)</label>
-                <select id="grade-filter">
-                    <option value="">كل الصفوف</option>
-                    {% for grade in grades %}
-                        <option value="{{ grade.id }}">{{ grade }}</option>
+    .type-btn {
+        padding: 7px 14px; border-radius: 9px; border: 1.5px solid #cbd5e1;
+        background: #fff; color: #475569; font-weight: 600; font-size: 13px;
+        cursor: pointer; transition: all .15s ease; white-space: nowrap;
+    }
+    .type-btn:hover { background: #f1f5f9; }
+    .type-btn.active[data-type="add"] { border-color: #1B5E20; background: #E8F5E9; color: #1B5E20; }
+    .type-btn.active[data-type="deduct"] { border-color: #b91c1c; background: #FEF2F2; color: #b91c1c; }
+
+    #bulk-bar {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(30px);
+        background: #fff; border: 1.5px solid #A5D6A7; border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 12px 18px; z-index: 190;
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+        opacity: 0; pointer-events: none; transition: all .2s ease;
+    }
+    #bulk-bar.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    #bulk-bar .count-badge {
+        background: #1B5E20; color: #fff; font-weight: 700; font-size: 12px;
+        border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    {{ sections_data|json_script:"sections-data" }}
+    {{ subjects_data|json_script:"subjects-data" }}
+
+    <div class="bg-white rounded-xl border border-brand-light p-5 mb-6">
+        <div class="flex flex-wrap items-end gap-4">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">الفصل</label>
+                <select id="section-select" class="app-input sm:w-56">
+                    <option value="">اختاري الفصل...</option>
+                    {% for section in sections %}
+                        <option value="{{ section.id }}" data-grade="{{ section.grade_id }}">{{ section }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <div class="form-field">
-                <label for="student-search">بحث بالاسم</label>
-                <input type="text" id="student-search" placeholder="اكتبي اسم الطالب...">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">نوع التقييم</label>
+                <div class="flex gap-2">
+                    <button type="button" data-category="subject" class="cat-btn">
+                        <i class="fa-solid fa-book"></i> أكاديمي / مادة
+                    </button>
+                    <button type="button" data-category="general" class="cat-btn">
+                        <i class="fa-solid fa-shield-halved"></i> إشراف وسلوك عام
+                    </button>
+                    <button type="button" data-category="redemption" class="cat-btn">
+                        <i class="fa-solid fa-right-left"></i> استبدال
+                    </button>
+                </div>
             </div>
-
-            <div class="form-field">
-                {{ form.student.label_tag }}
-                {{ form.student }}
-                {% for error in form.student.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            <div id="subject-wrapper" class="hidden">
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">المادة</label>
+                <select id="subject-select" class="app-input sm:w-56" disabled>
+                    <option value="">اختاري الفصل أولاً...</option>
+                </select>
             </div>
-
-            <div class="balance-box" id="balance-box" hidden>
-                <p>الرصيد الأسبوعي (المادة المختارة): <strong id="balance-weekly-subject">—</strong></p>
-                <p>الرصيد الأسبوعي (الإشراف العام): <strong id="balance-weekly-supervision">—</strong></p>
-                <p>الرصيد التراكمي: <strong id="balance-cumulative">—</strong></p>
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1.5">العملية</label>
+                <div class="flex gap-2">
+                    <button type="button" data-type="all" class="type-btn active">الكل</button>
+                    <button type="button" data-type="add" class="type-btn"><i class="fa-solid fa-plus ml-1"></i> إضافة</button>
+                    <button type="button" data-type="deduct" class="type-btn"><i class="fa-solid fa-minus ml-1"></i> خصم</button>
+                </div>
             </div>
+            <div class="pb-2.5 text-sm text-slate-500">
+                <i class="fa-regular fa-calendar ml-1"></i> {{ week_label }}
+            </div>
+        </div>
+    </div>
 
-            <button type="submit">تسجيل التقييم</button>
-        </form>
+    <div id="table-wrap">
+        <p class="text-center text-slate-400 py-16">اختاري الفصل ونوع التقييم لإظهار جدول الطلاب</p>
+    </div>
 
-        <p><a href="{% url 'accounts:data_entry_dashboard' %}">رجوع للوحة الرئيسية</a></p>
-    </main>
+    <div id="toast"></div>
 
-    <script>
-        const subjectsData = JSON.parse(document.getElementById('subjects-data').textContent);
-        const rulesData = JSON.parse(document.getElementById('rules-data').textContent);
-        const studentsData = JSON.parse(document.getElementById('students-data').textContent);
+    <div id="bulk-bar">
+        <span class="count-badge"><span id="bulk-count">0</span> محدّدة</span>
+        <span class="text-xs text-slate-500">اضغطي أي زر قاعدة بصف من الصفوف المحدّدة لتطبيقها على الكل دفعة وحدة</span>
+        <button type="button" id="bulk-clear-btn" class="text-slate-500 text-sm font-semibold hover:text-slate-700">إلغاء التحديد</button>
+    </div>
+{% endblock %}
 
-        const categoryFilter = document.getElementById('category-filter');
-        const subjectFieldWrapper = document.getElementById('subject-field-wrapper');
-        const subjectSelect = document.getElementById('id_subject');
-        const ruleSelect = document.getElementById('id_rule');
-        const gradeFilter = document.getElementById('grade-filter');
-        const studentSearch = document.getElementById('student-search');
-        const studentSelect = document.getElementById('id_student');
-        const balanceBox = document.getElementById('balance-box');
+{% block scripts %}
+<script>
+(function () {
+    const subjectsData = JSON.parse(document.getElementById('subjects-data').textContent);
 
-        const ruleOptionsOriginal = Array.from(ruleSelect.options)
-            .filter(function (opt) { return opt.value; })
-            .map(function (opt) { return { value: opt.value, text: opt.text }; });
+    const sectionSelect = document.getElementById('section-select');
+    const catBtns = document.querySelectorAll('.cat-btn');
+    const typeBtns = document.querySelectorAll('.type-btn');
+    const subjectWrapper = document.getElementById('subject-wrapper');
+    const subjectSelect = document.getElementById('subject-select');
+    const tableWrap = document.getElementById('table-wrap');
+    const toast = document.getElementById('toast');
 
-        const studentOptionsOriginal = Array.from(studentSelect.options)
-            .filter(function (opt) { return opt.value; })
-            .map(function (opt) { return { value: opt.value, text: opt.text }; });
+    const bulkBar = document.getElementById('bulk-bar');
+    const bulkCount = document.getElementById('bulk-count');
+    const bulkClearBtn = document.getElementById('bulk-clear-btn');
 
-        function ruleMeta(id) {
-            return rulesData.find(function (r) { return String(r.id) === String(id); });
+    let selectedCategory = null;
+    let selectedType = 'all';
+    let selectedStudents = new Set();
+
+    function getCookie(name) {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    const csrfToken = getCookie('csrftoken');
+
+    // --- توست عادي + توست فيه زر تراجع ---
+
+    function showToast(message, isError) {
+        toast.innerHTML = '';
+        toast.appendChild(document.createTextNode(message));
+        toast.className = isError ? 'show error' : 'show';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () { toast.className = ''; }, 1800);
+    }
+
+    function showActionToast(message, undoItems) {
+        toast.innerHTML = '';
+        toast.appendChild(document.createTextNode(message));
+
+        if (undoItems && undoItems.length) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'undo-btn';
+            btn.textContent = 'تراجع';
+            btn.addEventListener('click', function () { performUndo(undoItems); });
+            toast.appendChild(btn);
         }
-        function studentMeta(id) {
-            return studentsData.find(function (s) { return String(s.id) === String(id); });
-        }
 
-        function refreshRuleOptions() {
-            const isSubjectMode = categoryFilter.value === 'subject';
-            subjectFieldWrapper.hidden = !isSubjectMode;
-            if (!isSubjectMode) {
+        toast.className = 'show';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () { toast.className = ''; }, 5000);
+    }
+
+    function performUndo(undoItems) {
+        fetch('/evaluations/bulk-restore/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(undoItems),
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                toast.className = '';
+                if (!data.ok) {
+                    showToast(data.error || 'تعذّر التراجع', true);
+                    return;
+                }
+                loadTable();
+                showToast('تم التراجع', false);
+            })
+            .catch(function () {
+                showToast('تعذّر الاتصال بالخادم', true);
+            });
+    }
+
+    function clearSelect(el, placeholder) {
+        el.innerHTML = '';
+        el.add(new Option(placeholder, ''));
+    }
+
+    function resetTable() {
+        tableWrap.innerHTML = '<p class="text-center text-slate-400 py-16">اختاري الفصل ونوع التقييم لإظهار جدول الطلاب</p>';
+        clearSelection();
+    }
+
+    function refreshSubjectOptions() {
+        if (!sectionSelect.value) {
+            subjectSelect.disabled = true;
+            clearSelect(subjectSelect, 'اختاري الفصل أولاً...');
+            return;
+        }
+        const gradeId = sectionSelect.selectedOptions[0].dataset.grade;
+        clearSelect(subjectSelect, 'اختاري المادة...');
+        subjectsData
+            .filter(function (s) { return s.grade_ids.map(String).indexOf(String(gradeId)) !== -1; })
+            .forEach(function (s) { subjectSelect.add(new Option(s.name, s.id)); });
+        subjectSelect.disabled = false;
+    }
+
+    sectionSelect.addEventListener('change', function () {
+        refreshSubjectOptions();
+        maybeLoadTable();
+    });
+
+    catBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            selectedCategory = btn.dataset.category;
+            catBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+
+            if (selectedCategory === 'subject') {
+                subjectWrapper.classList.remove('hidden');
+                refreshSubjectOptions();
+            } else {
+                subjectWrapper.classList.add('hidden');
                 subjectSelect.value = '';
             }
+            maybeLoadTable();
+        });
+    });
 
-            const selectedSubjectId = isSubjectMode ? subjectSelect.value : '';
+    typeBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            selectedType = btn.dataset.type;
+            typeBtns.forEach(function (b) { b.classList.toggle('active', b === btn); });
+            maybeLoadTable();
+        });
+    });
 
-            ruleSelect.innerHTML = '';
-            ruleSelect.add(new Option('---------', ''));
+    subjectSelect.addEventListener('change', maybeLoadTable);
 
-            ruleOptionsOriginal.forEach(function (opt) {
-                const meta = ruleMeta(opt.value);
-                if (!meta) return;
+    function maybeLoadTable() {
+        if (!sectionSelect.value || !selectedCategory) { resetTable(); return; }
+        if (selectedCategory === 'subject' && !subjectSelect.value) { resetTable(); return; }
+        loadTable();
+    }
 
-                if (isSubjectMode) {
-                    if (meta.category !== 'subject') return;
-                    if (selectedSubjectId && meta.subject_id && String(meta.subject_id) !== String(selectedSubjectId)) return;
-                } else {
-                    if (meta.category !== 'general') return;
-                }
-
-                ruleSelect.add(new Option(opt.text, opt.value));
+    function loadTable() {
+        tableWrap.innerHTML = '<p class="text-center text-slate-400 py-16">جاري التحميل...</p>';
+        clearSelection();
+        let url = '/evaluations/bulk-table/?section=' + sectionSelect.value + '&category=' + selectedCategory;
+        if (selectedCategory === 'subject') url += '&subject=' + subjectSelect.value;
+        if (selectedType !== 'all') url += '&type=' + selectedType;
+        fetch(url)
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                tableWrap.innerHTML = html;
+                bindCellButtons();
+                bindCheckboxes();
             });
+    }
+
+    function bindCellButtons() {
+        tableWrap.querySelectorAll('[data-cell-btn]').forEach(function (btn) {
+            btn.addEventListener('click', function () { onCellClick(btn); });
+        });
+    }
+
+    function onCellClick(btn) {
+        const studentId = btn.dataset.student;
+        const ruleId = btn.dataset.rule;
+        const value = btn.dataset.value || '';
+
+        // لو الصف اللي بداخله هذا الزر جزء من تحديد متعدد (طالبين أو أكثر)، طبّقي على كل المحددين دفعة واحدة
+        if (selectedStudents.has(studentId) && selectedStudents.size >= 2) {
+            applyBulkFromRow(ruleId, value, btn);
+            return;
         }
 
-        function refreshStudentOptions() {
-            const gradeId = gradeFilter.value;
-            const searchText = studentSearch.value.trim().toLowerCase();
+        const group = tableWrap.querySelector('[data-cell-group="' + studentId + '-' + ruleId + '"]');
 
-            const matches = [];
-            const rest = [];
+        btn.disabled = true;
 
-            studentOptionsOriginal.forEach(function (opt) {
-                const meta = studentMeta(opt.value);
-                if (!meta) return;
-                if (gradeId && String(meta.grade_id) !== String(gradeId)) return;
-
-                if (searchText && opt.text.toLowerCase().includes(searchText)) {
-                    matches.push(opt);
-                } else {
-                    rest.push(opt);
+        fetch('/evaluations/bulk-toggle/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: new URLSearchParams({
+                student: studentId, rule: ruleId,
+                subject: selectedCategory === 'subject' ? subjectSelect.value : '',
+                value: value,
+            }),
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                btn.disabled = false;
+                if (!data.ok) {
+                    showToast(data.error, true);
+                    return;
                 }
+                if (group.dataset.range === '1') {
+                    group.querySelectorAll('[data-cell-btn]').forEach(function (b) {
+                        b.classList.toggle('active', data.applied && String(b.dataset.value) === String(data.value));
+                    });
+                } else {
+                    group.querySelectorAll('[data-cell-btn]').forEach(function (b) {
+                        b.classList.toggle('active', data.applied);
+                    });
+                }
+                updateBalanceCell(studentId, data.balance);
+                showActionToast(data.applied ? 'تم الحفظ' : 'تم الإلغاء', data.undo);
+            })
+            .catch(function () {
+                btn.disabled = false;
+                showToast('تعذّر الاتصال بالخادم', true);
             });
+    }
 
-            studentSelect.innerHTML = '';
-            studentSelect.add(new Option('---------', ''));
-            matches.concat(rest).forEach(function (opt) {
-                studentSelect.add(new Option(opt.text, opt.value));
+    function applyBulkFromRow(ruleId, value, btn) {
+        const th = tableWrap.querySelector('th[data-rule-id="' + ruleId + '"]');
+        const ruleName = th ? th.dataset.ruleName : '';
+
+        btn.disabled = true;
+
+        const body = new URLSearchParams();
+        body.append('rule', ruleId);
+        body.append('subject', selectedCategory === 'subject' ? subjectSelect.value : '');
+        body.append('value', value);
+        selectedStudents.forEach(function (id) { body.append('students', id); });
+
+        fetch('/evaluations/bulk-apply-many/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: body,
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.ok) {
+                    showToast(data.error || 'تعذّر التطبيق الجماعي', true);
+                    return;
+                }
+                const message = data.success_count === data.total
+                    ? 'تم تطبيق (' + ruleName + ') على ' + data.success_count + ' طالب'
+                          : 'تم تطبيق (' + ruleName + ') على ' + data.success_count + ' من ' + data.total + ' — البعض لم يُطبَّق (السقف الأسبوعي أو الرصيد غير كافٍ)';
+                loadTable();
+                showActionToast(message, data.undo);
+            })
+            .catch(function () {
+                showToast('تعذّر الاتصال بالخادم', true);
             });
-        }
+    }
 
-        function refreshBalance() {
-            const studentId = studentSelect.value;
+    function updateBalanceCell(studentId, balance) {
+        const balanceCell = tableWrap.querySelector('[data-balance="' + studentId + '"]');
+        if (!balanceCell) return;
+        balanceCell.textContent = balance;
+        balanceCell.classList.remove('flash-save');
+        void balanceCell.offsetWidth;
+        balanceCell.classList.add('flash-save');
+    }
 
-            if (!studentId) {
-                balanceBox.hidden = true;
-                return;
-            }
+    // --- تحديد متعدد + شريط التطبيق الجماعي ---
 
-            let url = "/evaluations/student-balance/" + studentId + "/";
-            if (categoryFilter.value === 'subject' && subjectSelect.value) {
-                url += "?subject=" + subjectSelect.value;
-            }
+    function clearSelection() {
+        selectedStudents = new Set();
+        updateBulkBar();
+    }
 
-            fetch(url)
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    document.getElementById('balance-weekly-subject').textContent =
-                        data.weekly_subject === null ? '—' : data.weekly_subject;
-                    document.getElementById('balance-weekly-supervision').textContent = data.weekly_supervision;
-                    document.getElementById('balance-cumulative').textContent = data.cumulative;
-                    balanceBox.hidden = false;
+    function bindCheckboxes() {
+        const selectAll = tableWrap.querySelector('#select-all-rows');
+        const rowChecks = tableWrap.querySelectorAll('[data-student-checkbox]');
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                rowChecks.forEach(function (cb) {
+                    cb.checked = selectAll.checked;
+                    toggleStudentSelection(cb.dataset.student, selectAll.checked);
                 });
+                updateBulkBar();
+            });
         }
 
-        categoryFilter.addEventListener('change', function () {
-            refreshRuleOptions();
-            refreshBalance();
+        rowChecks.forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                toggleStudentSelection(cb.dataset.student, cb.checked);
+                if (!cb.checked && selectAll) selectAll.checked = false;
+                updateBulkBar();
+            });
         });
-        subjectSelect.addEventListener('change', function () {
-            refreshRuleOptions();
-            refreshBalance();
-        });
-        gradeFilter.addEventListener('change', refreshStudentOptions);
-        studentSearch.addEventListener('input', refreshStudentOptions);
-        studentSelect.addEventListener('change', refreshBalance);
+    }
 
-        refreshRuleOptions();
-    </script>
-</body>
-</html>
+    function toggleStudentSelection(studentId, checked) {
+        if (checked) selectedStudents.add(studentId);
+        else selectedStudents.delete(studentId);
+    }
+
+    function updateBulkBar() {
+        bulkCount.textContent = selectedStudents.size;
+        bulkBar.classList.toggle('show', selectedStudents.size > 0);
+    }
+
+    bulkClearBtn.addEventListener('click', function () {
+        tableWrap.querySelectorAll('[data-student-checkbox]').forEach(function (cb) { cb.checked = false; });
+        const selectAll = tableWrap.querySelector('#select-all-rows');
+        if (selectAll) selectAll.checked = false;
+        clearSelection();
+    });
+
+    // --- تعبئة مسبقة من رابط (زي روابط "فصول محتاجة إدخال" بالصفحة الرئيسية) ---
+
+    (function initFromQueryString() {
+        const params = new URLSearchParams(window.location.search);
+        const qsSection = params.get('section');
+        const qsCategory = params.get('category');
+        const qsSubject = params.get('subject');
+
+        if (qsSection && tableWrap && document.querySelector('#section-select option[value="' + qsSection + '"]')) {
+            sectionSelect.value = qsSection;
+            refreshSubjectOptions();
+        }
+        if (qsCategory) {
+            const btn = document.querySelector('.cat-btn[data-category="' + qsCategory + '"]');
+            if (btn) btn.click();
+        }
+        if (qsSubject) {
+            subjectSelect.value = qsSubject;
+        }
+        maybeLoadTable();
+    })();
+})();
+</script>
+{% endblock %}

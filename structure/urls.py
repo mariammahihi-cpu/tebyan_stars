@@ -14,14 +14,15 @@ urlpatterns = [
     path("sections/<int:pk>/delete/", views.delete_section, name="delete_section"),
 
     path("subjects/", views.manage_subjects, name="manage_subjects"),
+    path("subjects/<int:pk>/", views.subject_detail, name="subject_detail"),
     path("subjects/<int:pk>/edit/", views.edit_subject, name="edit_subject"),
     path("subjects/<int:pk>/delete/", views.delete_subject, name="delete_subject"),
 
     path("teachers/", views.manage_teachers, name="manage_teachers"),
+    path("teachers/<int:pk>/", views.teacher_detail, name="teacher_detail"),
     path("teachers/<int:pk>/edit/", views.edit_teacher, name="edit_teacher"),
     path("teachers/<int:pk>/delete/", views.delete_teacher, name="delete_teacher"),
 
-    path("section-subjects/", views.manage_section_subjects, name="manage_section_subjects"),
     path("section-subjects/<int:pk>/edit/", views.edit_section_subject, name="edit_section_subject"),
     path("section-subjects/<int:pk>/delete/", views.delete_section_subject, name="delete_section_subject"),
 ]

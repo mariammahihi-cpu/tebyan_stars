@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category_label }} - نجوم التبيان{% endblock %}
+
+{% block page_title %}
+    <a href="{% url 'rules:manage_rules' %}" class="w-9 h-9 rounded-lg border border-brand-light bg-white flex items-center justify-center text-slate-500 hover:bg-brand-bg transition ml-1" title="رجوع لقواعد التقييم">
+        <i class="fa-solid fa-arrow-right"></i>
+    </a>
+    <i class="fa-solid fa-list-check text-brand-dark"></i> {{ category_label }}
+{% endblock %}
+
+{% block header_actions %}
+    {% if user.is_super_admin or category == "redemption" %}
+        <button type="button" onclick="openModal('addRuleModal')" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-dark text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-[#154d19] transition">
+            <i class="fa-solid fa-plus"></i> قاعدة جديدة
+        </button>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <form method="get" class="mb-6 flex flex-col sm:flex-row sm:items-end gap-3">
+        <div class="flex-1">
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">البحث</label>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute top-1/2 -translate-y-1/2 right-4 text-slate-400"></i>
+                <input type="text" name="q" value="{{ search }}" placeholder="بحث باسم القاعدة..." class="app-input pr-11">
+            </div>
+        </div>
+        <div class="sm:w-56">
+            <label class="block text-xs font-semibold text-slate-500 mb-1.5">النوع</label>
+            <select name="type" class="app-input" onchange="this.form.submit()">
+                <option value="">كل القواعد</option>
+                <option value="add" {% if rule_type == "add" %}selected{% endif %}>قوانين الإضافة (+)</option>
+                <option value="deduct" {% if rule_type == "deduct" %}selected{% endif %}>قوانين الخصم (-)</option>
+            </select>
+        </div>
+        {% if category == "subject" %}
+            <div class="sm:w-56">
+                <label class="block text-xs font-semibold text-slate-500 mb-1.5">المادة</label>
+                <select name="subject" class="app-input" onchange="this.form.submit()">
+                    <option value="">كل المواد</option>
+                    {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if subject_id == subject.id|stringformat:"s" %}selected{% endif %}>{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <button class="px-5 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition whitespace-nowrap h-[42px]">
+            <i class="fa-solid fa-magnifying-glass ml-1"></i> بحث
+        </button>
+    </form>
+
+    <div class="bg-white rounded-xl border border-brand-light overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead class="bg-brand-bg text-slate-600 text-xs uppercase">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">اسم القاعدة</th>
+                        {% if category == "subject" %}<th class="px-4 py-3 font-semibold">المادة</th>{% endif %}
+                        {% if category == "redemption" %}<th class="px-4 py-3 font-semibold">الصفوف</th>{% endif %}
+                        <th class="px-4 py-3 font-semibold">القيمة</th>
+                        <th class="px-4 py-3 font-semibold text-center">إجراء</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-light">
+                    {% for rule in rules %}
+                        <tr class="hover:bg-brand-bg/40 transition">
+                            <td class="px-4 py-3 text-slate-800 font-medium">{{ rule.name }}</td>
+                            {% if category == "subject" %}
+                                <td class="px-4 py-3 text-slate-600">{% if rule.subject %}{{ rule.subject.name }}{% else %}كل المواد{% endif %}</td>
+                            {% endif %}
+                            {% if category == "redemption" %}
+                                <td class="px-4 py-3 text-slate-600">{% if rule.grades.all %}{{ rule.grades.all|join:"، " }}{% else %}كل الصفوف{% endif %}</td>
+                            {% endif %}
+                            <td class="px-4 py-3">
+                                {% if rule.is_range %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if rule.min_value > 0 %}bg-brand-medium/15 text-brand-dark border border-brand-medium/30{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                                        {{ rule.min_value }} إلى {{ rule.max_value }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if rule.value > 0 %}bg-brand-medium/15 text-brand-dark border border-brand-medium/30{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                                        {% if rule.value > 0 %}+{% endif %}{{ rule.value }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <a href="{% url 'rules:edit_rule' rule.pk %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-dark/10 text-brand-dark hover:bg-brand-dark/20 transition">تعديل</a>
+                                    {% if user.is_super_admin or category == "redemption" %}
+                                        <form method="post" action="{% url 'rules:delete_rule' rule.pk %}"
+                                              data-confirm-title="حذف القاعدة"
+                                              data-confirm="هل أنتِ متأكدة من حذف قاعدة {{ rule.name }}؟ هذا الإجراء نهائي."
+                                              data-confirm-tone="danger">
+                                            {% csrf_token %}
+                                            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition">حذف</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="px-4 py-12 text-center text-slate-400">لا يوجد قواعد مطابقة</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if user.is_super_admin or category == "redemption" %}
+        <div id="addRuleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] {% if form.errors %}flex{% else %}hidden{% endif %} items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                <div class="flex items-center justify-between px-6 py-4 bg-brand-bg border-b-2 border-brand-dark">
+                    <h2 class="text-base font-bold text-slate-800">إضافة قاعدة جديدة — {{ category_label }}</h2>
+                    <button type="button" onclick="closeModal('addRuleModal')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-white/60 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    {% if form.non_field_errors %}
+                        <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-300 text-red-800 text-sm">
+                            {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endif %}
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <div class="flex gap-3 pt-2">
+                            <button type="submit" class="flex-1 px-4 py-2.5 bg-brand-dark text-white text-sm font-semibold rounded-lg hover:bg-[#154d19] transition">إضافة</button>
+                            <button type="button" onclick="closeModal('addRuleModal')" class="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        function openModal(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    </script>
+{% endblock %}

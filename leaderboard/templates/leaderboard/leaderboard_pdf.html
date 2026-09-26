@@ -1,0 +1,64 @@
+{% extends "reports/_base_pdf.html" %}
+
+{% block report_title %}لوحة الشرف{% endblock %}
+{% block report_subtitle %}{{ section }}{% endblock %}
+
+{% block extra_style %}
+    .lb-section-title {
+        font-size: 14px; font-weight: 800; color: #1B5E20;
+        margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #A5D6A7;
+    }
+    .lb-columns { display: flex; gap: 16px; }
+    .lb-col { flex: 1; }
+    .lb-col-title {
+        font-size: 11.5px; font-weight: 700; color: #fff; background: #66BB6A;
+        padding: 5px 10px; border-radius: 6px 6px 0 0;
+    }
+    .lb-col table { border: 1px solid #A5D6A7; border-top: none; }
+    .lb-col thead th { background: #E8F5E9; color: #1B5E20; font-size: 9.5px; }
+    .lb-rank {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 18px; height: 18px; border-radius: 50%; font-size: 9px; font-weight: 800;
+        background: #FFF8E1; color: #B45309;
+    }
+    .lb-rank.top1 { background: #F9A825; color: #fff; }
+    .lb-rank.top2 { background: #FFD54F; color: #7c5800; }
+    .lb-rank.top3 { background: #FFECB3; color: #92400e; }
+{% endblock %}
+
+{% block report_content %}
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-label">الفصل</div>
+            <div class="info-value">{{ section }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-label">عدد الطلاب المعروضين</div>
+            <div class="info-value">{% if top_n == 'all' %}كل الفصل{% else %}أعلى {{ top_n }}{% endif %}</div>
+        </div>
+    </div>
+
+    <div class="lb-section-title">الرصيد الأسبوعي الحالي</div>
+    <div class="lb-columns">
+        <div class="lb-col">
+            <div class="lb-col-title">الأداء الأكاديمي</div>
+            {% include "leaderboard/_pdf_table.html" with rows=leaderboard.weekly_academic %}
+        </div>
+        <div class="lb-col">
+            <div class="lb-col-title">السلوك والإشراف</div>
+            {% include "leaderboard/_pdf_table.html" with rows=leaderboard.weekly_behavior %}
+        </div>
+    </div>
+
+    <div class="lb-section-title">الرصيد التراكمي</div>
+    <div class="lb-columns">
+        <div class="lb-col">
+            <div class="lb-col-title">الأداء الأكاديمي</div>
+            {% include "leaderboard/_pdf_table.html" with rows=leaderboard.cumulative_academic %}
+        </div>
+        <div class="lb-col">
+            <div class="lb-col-title">السلوك والإشراف</div>
+            {% include "leaderboard/_pdf_table.html" with rows=leaderboard.cumulative_behavior %}
+        </div>
+    </div>
+{% endblock %}
